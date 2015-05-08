@@ -1,0 +1,19 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<uexplugins>
+    <plugin
+        uexName="uexCamera" version="3.0.12" build="12">
+        <info>12:修改自定义相机crash问题</info>
+        <build>11:修改低分辨率手机自定义相机拍照照片尺寸过小问题</build>
+        <build>10:修改自定义相机横屏拍照显示问题</build>
+        <build>9:修改自定义相机拍完的照片模糊问题</build>
+        <build>8:修改自定义相机拍照时图片模糊以及拍照后崩溃问题</build>
+        <build>7:修改自定义相机空指针异常问题</build>
+        <build>6:修改自定义相机拍照后崩溃问题</build>
+        <build>5:修改调用系统相机大尺寸图片的处理内存溢出问题</build>
+        <build>4:添加自定义相机点击屏幕聚焦的功能</build>
+        <build>3:修改相机参数</build>
+        <build>2:修改相机拍照数量限制</build>
+        <build>1.自定义camera，已解决使用系统camera内存不足应用被杀死的bug</build>
+        <build>0:camera插件基础版</build>
+    </plugin>
+</uexplugins>

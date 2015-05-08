@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<manifest>
+
+   <activity
+            android:name="org.zywx.wbpalmstar.plugin.uexcamera.CustomCamera"
+            android:configChanges="orientation|keyboardHidden"
+            android:theme="@android:style/Theme.NoTitleBar.Fullscreen"
+            >
+            <intent-filter>
+                <action android:name="android.intent.action.CAMERA_PLUGIN" />
+				<category android:name="android.intent.category.DEFAULT" />
+            </intent-filter>
+            
+            </activity>
+<uses-permission android:name="android.permission.FLASHLIGHT" />
+<uses-permission android:name="android.permission.CAMERA" />
+ <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
+</manifest>

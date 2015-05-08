@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8" standalone="no"?>
+<resources>
+
+
+    
+    
+    <string name="plugin_camera_cancel">取消</string>
+	<string name="plugin_camera_complete">完成</string>
+    
+</resources>
