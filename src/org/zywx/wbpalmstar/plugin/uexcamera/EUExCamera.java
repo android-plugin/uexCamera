@@ -1,18 +1,5 @@
 package org.zywx.wbpalmstar.plugin.uexcamera;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
-import org.zywx.wbpalmstar.base.BUtility;
-import org.zywx.wbpalmstar.base.ResoureFinder;
-import org.zywx.wbpalmstar.engine.EBrowserView;
-import org.zywx.wbpalmstar.engine.universalex.EUExBase;
-import org.zywx.wbpalmstar.engine.universalex.EUExCallback;
-
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.MemoryInfo;
@@ -28,6 +15,19 @@ import android.os.Bundle;
 import android.provider.MediaStore;
 import android.webkit.URLUtil;
 import android.widget.Toast;
+
+import org.zywx.wbpalmstar.base.BUtility;
+import org.zywx.wbpalmstar.base.ResoureFinder;
+import org.zywx.wbpalmstar.engine.EBrowserView;
+import org.zywx.wbpalmstar.engine.universalex.EUExBase;
+import org.zywx.wbpalmstar.engine.universalex.EUExCallback;
+
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 public class EUExCamera extends EUExBase {
 
@@ -104,7 +104,7 @@ public class EUExCamera extends EUExBase {
 			Uri uri = Uri.fromFile(m_tempPath);
 			camaIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri);
 			camaIntent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
-			startActivityForResult(camaIntent, 66666);
+			startActivityForResult(camaIntent, 66);
 		} else {
 			Toast.makeText(
 					mContext,
@@ -179,7 +179,7 @@ public class EUExCamera extends EUExBase {
 			camaIntent.setClass(mContext, CustomCamera.class);
 			camaIntent.putExtra("photoPath", m_tempPath.getAbsolutePath());
 			camaIntent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
-			startActivityForResult(camaIntent, 66667);
+			startActivityForResult(camaIntent, 67);
 		} else {
 			Toast.makeText(
 					mContext,
@@ -201,7 +201,7 @@ public class EUExCamera extends EUExBase {
 		ExifInterface exif = null;
 		int degree = 0;
 		if (resultCode == Activity.RESULT_OK) {
-			if (requestCode == 66666) {
+			if (requestCode == 66) {
 				try {
 					if (null != m_tempPath) {
 						finalPath = m_tempPath.getAbsolutePath();
@@ -296,7 +296,7 @@ public class EUExCamera extends EUExBase {
 							"Storage error or no permission");
 					return;
 				}
-			} else if (requestCode == 66667) {
+			} else if (requestCode == 67) {
 				if (null != data)
 					;
 				finalPath = m_tempPath.getAbsolutePath();

@@ -1,8 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="3.0.12" build="12">
-        <info>12:修改自定义相机crash问题</info>
+        uexName="uexCamera" version="3.0.13" build="13">
+        <info>13:修复新引擎不能使用的问题</info>
+        <build>12:修改自定义相机crash问题</build>
         <build>11:修改低分辨率手机自定义相机拍照照片尺寸过小问题</build>
         <build>10:修改自定义相机横屏拍照显示问题</build>
         <build>9:修改自定义相机拍完的照片模糊问题</build>
