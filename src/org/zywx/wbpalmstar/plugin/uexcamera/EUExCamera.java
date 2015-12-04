@@ -12,7 +12,9 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Log;
 import android.webkit.URLUtil;
 import android.widget.Toast;
 
@@ -24,6 +26,8 @@ import org.zywx.wbpalmstar.engine.universalex.EUExCallback;
 
 import java.io.BufferedOutputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.text.SimpleDateFormat;
@@ -351,8 +355,13 @@ public class EUExCamera extends EUExBase {
 	 * @return
 	 */
 	private String makePictrue(File inPath, int degree) {
-		String newPath = mBrwView.getCurrentWidget().getWidgetPath()
-				+ getName();
+		String rootPath = Environment.getExternalStorageDirectory().toString()+"/widgetone/apps/"+mBrwView.getRootWidget().m_appId+"/photo";
+		File file = new File(rootPath);
+		if (!file.exists()) {
+			file.mkdirs();// 如果不存在，则创建所有的父文件夹
+		}
+		String newPath = Environment.getExternalStorageDirectory().toString()+"/widgetone/apps/"+mBrwView.getRootWidget().m_appId+"/"+getName();
+		Log.i("ttest", "newPath---->"+newPath);
 		BitmapFactory.Options opts = new BitmapFactory.Options();
 		Bitmap boundBitmap = null;
 		LogUtils.o("rotate: " + degree);
@@ -360,10 +369,12 @@ public class EUExCamera extends EUExBase {
 			LogUtils.o("mWillCompress == true");
 			opts.inJustDecodeBounds = true;
 			String path = inPath.getAbsolutePath();
-			boundBitmap = BitmapFactory.decodeFile(inPath.getAbsolutePath(),
-					opts);
+			try {
+				boundBitmap = BitmapFactory.decodeStream(new FileInputStream(path), null, opts);
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
 			LogUtils.o(path);
-			opts.inJustDecodeBounds = false;
 			if (mQuality > 0) {
 				LogUtils.o("mQuality > 0");
 				;
@@ -383,34 +394,31 @@ public class EUExCamera extends EUExBase {
 			opts.inTempStorage = new byte[64 * 1024];
 			mQuality = 100;
 		}
+		opts.inSampleSize = 2;
+		opts.inPurgeable = true;
+		opts.inInputShareable = true;
+		opts.inTempStorage = new byte[64 * 1024];
+		mQuality = 60;
+		opts.inJustDecodeBounds = false;
 		LogUtils.o("inSampleSize == " + opts.inSampleSize);
-		Bitmap picture = null;
 		File newFile = new File(newPath);
 		try {
-			Bitmap tmpPicture = BitmapFactory.decodeFile(
-					inPath.getAbsolutePath(), opts);
-			picture = tmpPicture;
+			Bitmap tmpPicture = BitmapFactory.decodeStream(new FileInputStream(inPath.getAbsolutePath()), null, opts);
 			if (degree > 0 && null != tmpPicture) {
-				picture = Util.rotate(tmpPicture, degree);
-				tmpPicture.recycle();
+				tmpPicture = Util.rotate(tmpPicture, degree);
 			}
-			BufferedOutputStream bos = new BufferedOutputStream(
-					new FileOutputStream(newFile));
-			picture.compress(Bitmap.CompressFormat.JPEG, mQuality, bos);
+			BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(newFile));
+			tmpPicture.compress(Bitmap.CompressFormat.JPEG, mQuality, bos);
 			bos.flush();
 			bos.close();
 		} catch (OutOfMemoryError e) {
-			Toast.makeText(mContext, "照片尺寸过大，内存溢出，\n请降低尺寸拍摄！",
-					Toast.LENGTH_LONG).show();
+			Toast.makeText(mContext, "照片尺寸过大，内存溢出，\n请降低尺寸拍摄！", Toast.LENGTH_LONG).show();
 			LogUtils.o(e.toString());
 			return null;
 		} catch (IOException e) {
 			LogUtils.o(e.toString());
 			return null;
 		} finally {
-			if (null != picture) {
-				picture.recycle();
-			}
 			inPath.delete();
 			if (boundBitmap != null) {
 				boundBitmap.recycle();
