@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent" >
+
+    <!-- 相机预览布局 -->
+
+    <SurfaceView
+        android:id="@+id/plugin_camera_surfaceView"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" >
+    </SurfaceView>
+
+    <!-- 下方按钮 -->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="48dp"
+        android:gravity="center"
+        android:orientation="vertical" >
+
+        <TextView
+            android:id="@+id/plugin_camera_tvLocation"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="10dp"
+            android:gravity="center"
+            android:textColor="#000000" />
+
+        <Button
+            android:id="@+id/plugin_camera_btnTakePhoto"
+            android:layout_width="50dp"
+            android:layout_height="50dp"
+            android:layout_marginBottom="10dp"
+            android:background="@drawable/plugin_camera_bt_takepic_selector" />
+    </LinearLayout>
+
+    <!-- 功能按钮（隐藏） -->
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="50dp"
+        android:layout_alignParentBottom="true"
+        android:layout_marginBottom="0dp"
+        android:background="#80000000"
+        android:baselineAligned="false"
+        android:orientation="horizontal"
+        android:visibility="gone" >
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:gravity="center" >
+
+            <Button
+                android:id="@+id/plugin_camera_btnClose"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/plugin_camera_close" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:gravity="center" >
+
+            <Button
+                android:id="@+id/plugin_camera_btnDrawLine"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/plugin_camera_draw_line" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:gravity="center" >
+
+            <Button
+                android:id="@+id/plugin_camera_btnOverturnCamera"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/plugin_camera_bt_changefacing_selector" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="50dp"
+            android:layout_weight="1"
+            android:gravity="center" >
+
+            <Button
+                android:id="@+id/plugin_camera_btnFlash"
+                android:layout_width="40dp"
+                android:layout_height="40dp"
+                android:background="@drawable/plugin_camera_flash_auto_selector" />
+        </LinearLayout>
+    </LinearLayout>
+
+    <View
+        android:id="@+id/plugin_camera_view_focus"
+        android:layout_width="80dp"
+        android:layout_height="80dp"
+        android:layout_gravity="center"
+        android:visibility="invisible" />
+
+</RelativeLayout>

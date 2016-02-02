@@ -1,10 +1,15 @@
 <?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
 
-   <plugin
-        className="org.zywx.wbpalmstar.plugin.uexcamera.EUExCamera" uexName="uexCamera" >
+    <plugin
+        className="org.zywx.wbpalmstar.plugin.uexcamera.EUExCamera"
+        uexName="uexCamera" >
         <method name="open" />
-         <method name="openInternal" />
-        
+        <method name="openInternal" />
+        <method name="openViewCamera" />
+        <method name="removeViewCameraFromWindow" />
+        <method name="changeFlashMode" />
+        <method name="changeCameraPosition" />
     </plugin>
+
 </uexplugins>

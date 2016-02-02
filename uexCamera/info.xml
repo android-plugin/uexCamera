@@ -1,8 +1,16 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="3.0.13" build="13">
-        <info>13:修复新引擎不能使用的问题</info>
+        uexName="uexCamera" version="3.0.16" build="16">
+        <info>16:修复了在三星手机上照片旋转方向不一致的问题;修复了多次点击照相按钮，再点重拍照相按钮失效的问题</info>
+        <build>15:修复了少写mCamera.setPreviewCallback(null)导致崩溃的问题</build>
+        <build>14:新增自定义View相机功能，可自行设置大小、位置，可传入地理位置，可调整闪光灯模式和前后置摄像头切换，并自带图像翻转和压缩功能
+               14.3:修复了显示找不到名为:my_uex_test_view的layout文件的测试错误
+               14.4:在openViewCamera接口里增加了调整质量的字段quality，具体使用方法见文档；优化了压缩算法
+               14.5:有时魅族4会在open时提示抛出RuntimeException，原因暂认为是内存不足，进行trycatch处理；进行处理让相机不超过屏幕分辨率
+               14.6:三星手机还是没有照相机图标和地理位置栏，进行marginBottom = 48dp 的处理
+               14.7:升级了一个小版本</build>
+        <build>13:修复新引擎不能使用的问题</build>
         <build>12:修改自定义相机crash问题</build>
         <build>11:修改低分辨率手机自定义相机拍照照片尺寸过小问题</build>
         <build>10:修改自定义相机横屏拍照显示问题</build>

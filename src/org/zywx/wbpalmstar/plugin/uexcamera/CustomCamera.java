@@ -225,6 +225,7 @@ public class CustomCamera extends Activity implements Callback,AutoFocusCallback
 			@Override
 			public void onClick(View v) {
 				if(mCamera!=null){
+					mCamera.setPreviewCallback(null);
 					mCamera.stopPreview();// 停掉原来摄像头的预览
 					mPreviewing=false;
 					Log.d("mPreviewing", " into change facing mPreviewing changed to :"+mPreviewing);
