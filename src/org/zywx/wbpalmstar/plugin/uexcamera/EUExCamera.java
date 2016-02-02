@@ -1,5 +1,25 @@
 package org.zywx.wbpalmstar.plugin.uexcamera;
 
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
+
+import org.json.JSONException;
+import org.json.JSONObject;
+import org.zywx.wbpalmstar.base.BUtility;
+import org.zywx.wbpalmstar.base.ResoureFinder;
+import org.zywx.wbpalmstar.engine.EBrowserView;
+import org.zywx.wbpalmstar.engine.universalex.EUExBase;
+import org.zywx.wbpalmstar.engine.universalex.EUExCallback;
+import org.zywx.wbpalmstar.engine.universalex.EUExUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.ViewCamera.CallbackCameraViewClose;
+import org.zywx.wbpalmstar.plugin.uexcamera.ViewCamera.CameraView;
+import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.ActivityManager;
 import android.app.ActivityManager.MemoryInfo;
@@ -8,41 +28,49 @@ import android.content.Intent;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Point;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.provider.MediaStore;
+import android.util.Log;
+import android.view.Display;
+import android.view.View;
 import android.webkit.URLUtil;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
-import org.zywx.wbpalmstar.base.BUtility;
-import org.zywx.wbpalmstar.base.ResoureFinder;
-import org.zywx.wbpalmstar.engine.EBrowserView;
-import org.zywx.wbpalmstar.engine.universalex.EUExBase;
-import org.zywx.wbpalmstar.engine.universalex.EUExCallback;
-
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-
-public class EUExCamera extends EUExBase {
+public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
 	public static final String TAG = "EUExCamera";
 	public static final String function = "uexCamera.cbOpen";
 	public static final String function1 = "uexCamera.cbOpenInternal";
+	private static final String FUNC_OPEN_VIEW_CAMERA_CALLBACK = "uexCamera.cbOpenViewCamera";
+	private static final String FUNC_CHANGE_FLASHMODE_CALLBACK = "uexCamera.cbChangeFlashMode";// 改变闪关灯模式的回调
+	private static final String FUNC_CHANGE_CAMERA_POSITION_CALLBACK = "uexCamera.cbChangeCameraPosition";// 改变摄像头位置的回调
+
+	public static String filePath = "";
+	private String location = "";
 
 	private File m_tempPath;
 	private boolean mWillCompress;
 	private int mQuality;
+	private View view;// 自定义相机View
+	private CameraView mCameraView;// 自定义相机View实例
 
 	public EUExCamera(Context context, EBrowserView inParent) {
 		super(context, inParent);
+		filePath = mBrwView.getWidgetPath() + "uexViewCameraPhotos";
+		Log.i("ttest", "filePath--->" + filePath);
 	}
 
+	/**
+	 * 打开系统相机
+	 * 
+	 * @param parm
+	 */
 	public void open(String[] parm) {
 		mWillCompress = false;
 		mQuality = -1;
@@ -73,8 +101,7 @@ public class EUExCamera extends EUExBase {
 			}
 		}
 		MemoryInfo outInfo = new MemoryInfo();
-		ActivityManager activityManager = (ActivityManager) mContext
-				.getSystemService(Context.ACTIVITY_SERVICE);
+		ActivityManager activityManager = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
 		activityManager.getMemoryInfo(outInfo);
 		if (outInfo.lowMemory /* || outInfo.availMem < 31000000 */) {
 			Toast.makeText(mContext, "内存不足,无法打开相机", Toast.LENGTH_LONG).show();
@@ -83,8 +110,7 @@ public class EUExCamera extends EUExBase {
 		}
 		if (BUtility.sdCardIsWork()) {
 			if (!mWillCompress) {
-				String path = mBrwView.getCurrentWidget().getWidgetPath()
-						+ getName();
+				String path = mBrwView.getCurrentWidget().getWidgetPath() + getName();
 				m_tempPath = new File(path);
 			} else {
 				m_tempPath = new File(BUtility.getSdCardRootPath() + "demo.jpg");
@@ -106,16 +132,18 @@ public class EUExCamera extends EUExBase {
 			camaIntent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
 			startActivityForResult(camaIntent, 66);
 		} else {
-			Toast.makeText(
-					mContext,
-					ResoureFinder.getInstance().getString(mContext,
-							"error_sdcard_is_not_available"),
+			Toast.makeText(mContext, ResoureFinder.getInstance().getString(mContext, "error_sdcard_is_not_available"),
 					Toast.LENGTH_SHORT).show();
 			errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error");
 			return;
 		}
 	}
 
+	/**
+	 * 打开自定义相机
+	 * 
+	 * @param parm
+	 */
 	public void openInternal(String[] parm) {
 
 		mWillCompress = false;
@@ -147,8 +175,7 @@ public class EUExCamera extends EUExBase {
 			}
 		}
 		MemoryInfo outInfo = new MemoryInfo();
-		ActivityManager activityManager = (ActivityManager) mContext
-				.getSystemService(Context.ACTIVITY_SERVICE);
+		ActivityManager activityManager = (ActivityManager) mContext.getSystemService(Context.ACTIVITY_SERVICE);
 		activityManager.getMemoryInfo(outInfo);
 		if (outInfo.lowMemory /* || outInfo.availMem < 31000000 */) {
 			Toast.makeText(mContext, "内存不足,无法打开相机", Toast.LENGTH_LONG).show();
@@ -157,8 +184,7 @@ public class EUExCamera extends EUExBase {
 		}
 		if (BUtility.sdCardIsWork()) {
 			if (!mWillCompress) {
-				String path = mBrwView.getCurrentWidget().getWidgetPath()
-						+ getName();
+				String path = mBrwView.getCurrentWidget().getWidgetPath() + getName();
 				m_tempPath = new File(path);
 			} else {
 				m_tempPath = new File(BUtility.getSdCardRootPath() + "demo.jpg");
@@ -181,13 +207,157 @@ public class EUExCamera extends EUExBase {
 			camaIntent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
 			startActivityForResult(camaIntent, 67);
 		} else {
-			Toast.makeText(
-					mContext,
-					ResoureFinder.getInstance().getString(mContext,
-							"error_sdcard_is_not_available"),
+			Toast.makeText(mContext, ResoureFinder.getInstance().getString(mContext, "error_sdcard_is_not_available"),
 					Toast.LENGTH_SHORT).show();
 			errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error");
 			return;
+		}
+
+	}
+
+	/**
+	 * 打开自定义View相机
+	 * 
+	 * @param parm
+	 */
+	public void openViewCamera(String[] parm) {
+		// Toast.makeText(mContext, "openViewCamera",
+		// Toast.LENGTH_SHORT).show();
+		if (parm.length < 6) {
+			return;
+		}
+		String inX = parm[0];
+		String inY = parm[1];
+		String inW = parm[2];
+		String inH = parm[3];
+		location = parm[4];
+		// TODO 新字段 图片质量
+		int quality = -1;// 初始化为-1
+		try {
+			quality = Integer.valueOf(parm[5]);
+			// 对quality进行容错处理
+			if (quality < 0) {
+				quality = 0;
+			} else if (quality > 100) {
+				quality = 100;
+			}
+		} catch (NumberFormatException e) {
+			e.printStackTrace();
+		}
+		Log.i(TAG, "location" + location);
+		Log.i("quality", "quality openViewCamera---->" + quality);
+
+		int x = 0;
+		int y = 0;
+		int w = 0;
+		int h = 0;
+		try {
+			x = Integer.parseInt(inX);
+			y = Integer.parseInt(inY);
+			w = Integer.parseInt(inW);
+			h = Integer.parseInt(inH);
+		} catch (Exception e) {
+			e.printStackTrace();
+			return;
+		}
+		// TODO 2016/1/19 增加超出分辨率判断
+		/** 获得屏幕分辨率 **/
+		Display display = ((Activity) mContext).getWindowManager().getDefaultDisplay();
+		Point size = new Point();
+		display.getSize(size);
+		int screenWidth = size.x;
+		int screenHeight = size.y;
+
+		if ((x + w) > screenWidth) {// 如果宽度超出屏幕宽度
+			w = screenWidth - x;// 限制最大为屏幕宽度
+		}
+		if ((y + h) > screenHeight) {// 如果高度超出屏幕高度
+			h = screenHeight - y;// 限制最大为屏幕高度
+		}
+
+		if (null == view) {
+			// // Dynamic get resources ID, does not allow use R
+			// int myViewID =
+			// EUExUtil.getResLayoutID("plugin_uex_demo_test_view");
+			// if (myViewID <= 0) {
+			// Toast.makeText(mContext, "找不到名为:my_uex_test_view的layout文件!",
+			// Toast.LENGTH_LONG).show();
+			// return;
+			// }
+			view = View.inflate(mContext, EUExUtil.getResLayoutID("plugin_camera_view_camera"), null);// 用view引入布局文件
+			mCameraView = (CameraView) view;// 将View强转为CameraView，获得CameraView的实例
+			mCameraView.setmEuExCamera(this);// 设置EUExCamera的实例
+			mCameraView.setCallbackCameraViewClose(this);// 注册callback，将当前类传入
+			mCameraView.setLocationText(location);// 调用方法写入地址
+			if (quality != -1) {// 如果quality格式正确
+				mCameraView.setQuality(quality);
+			}
+			RelativeLayout.LayoutParams lparm = new RelativeLayout.LayoutParams(w, h);
+			lparm.leftMargin = x;
+			lparm.topMargin = y;
+			addViewToCurrentWindow(mCameraView, lparm);
+		}
+	}
+
+	/**
+	 * 移除自定义相机
+	 * 
+	 * @param parm
+	 */
+	public void removeViewCameraFromWindow(String[] parm) {
+		if (null != view) {
+			removeViewFromCurrentWindow(view);
+			view = null;
+		}
+		// Toast.makeText(mContext, "removeViewCameraFromWindow",
+		// Toast.LENGTH_SHORT).show();
+	}
+
+	/**
+	 * 更改闪光灯模式,只允许输入0、1、2三个数字,0代表自动，1代表开启，2代表关闭,默认为关闭
+	 * 
+	 * @param parm
+	 */
+	public void changeFlashMode(String[] parm) {
+		String flashMode = parm[0];
+		if (flashMode.equals("0") || flashMode.equals("1") || flashMode.equals("2")) {
+			mCameraView.setFlashMode(Integer.valueOf(flashMode));
+			jsCallback(FUNC_CHANGE_FLASHMODE_CALLBACK, 0, EUExCallback.F_C_TEXT, flashMode);
+		} else {
+			jsCallback(FUNC_CHANGE_FLASHMODE_CALLBACK, 0, EUExCallback.F_C_TEXT, "-1");
+		}
+	}
+
+	/**
+	 * 设置前后摄像头,只允许输入0、1两个数字,0代表前置，1代表后置,默认为后置
+	 * 
+	 * @param parm
+	 */
+	public void changeCameraPosition(String[] parm) {
+		String cameraPosition = parm[0];
+		if (view == null) {
+			return;
+		}
+		if (cameraPosition.equals("0")) {
+			CameraView.cameraPosition = 1;
+			((Activity) mContext).runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					mCameraView.overturnCamera();
+				}
+			});
+			jsCallback(FUNC_CHANGE_CAMERA_POSITION_CALLBACK, 0, EUExCallback.F_C_TEXT, cameraPosition);
+		} else if (cameraPosition.equals("1")) {
+			CameraView.cameraPosition = 0;
+			((Activity) mContext).runOnUiThread(new Runnable() {
+				@Override
+				public void run() {
+					mCameraView.overturnCamera();
+				}
+			});
+			jsCallback(FUNC_CHANGE_CAMERA_POSITION_CALLBACK, 0, EUExCallback.F_C_TEXT, cameraPosition);
+		} else {
+			jsCallback(FUNC_CHANGE_CAMERA_POSITION_CALLBACK, 0, EUExCallback.F_C_TEXT, "-1");
 		}
 
 	}
@@ -214,13 +384,11 @@ public class EUExCamera extends EUExBase {
 								realPath = url.replace("file://", "");
 							} else if (URLUtil.isContentUrl(url)) {
 								Activity activity = (Activity) mContext;
-								Cursor c = activity.managedQuery(content, null,
-										null, null, null);
+								@SuppressWarnings("deprecation")
+								Cursor c = activity.managedQuery(content, null, null, null, null);
 								boolean isExist = c.moveToFirst();
 								if (isExist) {
-									realPath = c
-											.getString(c
-													.getColumnIndex(MediaStore.Images.ImageColumns.DATA));
+									realPath = c.getString(c.getColumnIndex(MediaStore.Images.ImageColumns.DATA));
 								}
 								c.close();
 							}
@@ -232,17 +400,14 @@ public class EUExCamera extends EUExBase {
 							if (null != bundle) {
 								Bitmap bitmap = (Bitmap) bundle.get("data");
 								if (null != bitmap) {
-									String newfile = BUtility
-											.getSdCardRootPath() + "demo.jpg";
+									String newfile = BUtility.getSdCardRootPath() + "demo.jpg";
 									File newFile = new File(newfile);
 									if (!newFile.exists()) {
 										newFile.createNewFile();
 									}
 									BufferedOutputStream bos = new BufferedOutputStream(
-											new FileOutputStream(new File(
-													newfile)));
-									bitmap.compress(Bitmap.CompressFormat.JPEG,
-											100, bos);
+											new FileOutputStream(new File(newfile)));
+									bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bos);
 									bos.flush();
 									bos.close();
 									finalPath = newfile;
@@ -251,16 +416,14 @@ public class EUExCamera extends EUExBase {
 						}
 					}
 					if (null == finalPath) {
-						errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN,
-								"Storage error or no permission");
+						errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
 						return;
 					}
 					if (URLUtil.isFileUrl(finalPath)) {
 						finalPath = finalPath.replace("file://", "");
 					}
 					exif = new ExifInterface(finalPath);
-					int orientation = exif.getAttributeInt(
-							ExifInterface.TAG_ORIENTATION, -1);
+					int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, -1);
 					if (orientation != -1) {
 						switch (orientation) {
 						case ExifInterface.ORIENTATION_NORMAL:
@@ -278,22 +441,18 @@ public class EUExCamera extends EUExBase {
 						}
 					}
 					if (!mWillCompress && 0 == degree) {
-						jsCallback(function, 0, EUExCallback.F_C_TEXT,
-								finalPath);
+						jsCallback(function, 0, EUExCallback.F_C_TEXT, finalPath);
 					} else {
 						String tPath = makePictrue(new File(finalPath), degree);
 						if (null == tPath) {
-							errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN,
-									"Storage error or no permission");
+							errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
 						} else {
-							jsCallback(function, 0, EUExCallback.F_C_TEXT,
-									tPath);
+							jsCallback(function, 0, EUExCallback.F_C_TEXT, tPath);
 						}
 					}
 				} catch (Exception e) {
 					e.printStackTrace();
-					errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN,
-							"Storage error or no permission");
+					errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
 					return;
 				}
 			} else if (requestCode == 67) {
@@ -306,8 +465,7 @@ public class EUExCamera extends EUExBase {
 					} catch (IOException e) {
 						e.printStackTrace();
 					}
-					int orientation = exif.getAttributeInt(
-							ExifInterface.TAG_ORIENTATION, -1);
+					int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, -1);
 					if (orientation != -1) {
 						switch (orientation) {
 						case ExifInterface.ORIENTATION_NORMAL:
@@ -325,22 +483,37 @@ public class EUExCamera extends EUExBase {
 						}
 					}
 					if (!mWillCompress && 0 == degree) {
-						jsCallback(function1, 0, EUExCallback.F_C_TEXT,
-								finalPath);
+						jsCallback(function1, 0, EUExCallback.F_C_TEXT, finalPath);
 					} else {
 						String tPath = makePictrue(new File(finalPath), degree);
 						if (null == tPath) {
-							errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN,
-									"Storage error or no permission");
+							errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
 						} else {
-							jsCallback(function1, 0, EUExCallback.F_C_TEXT,
-									tPath);
+							jsCallback(function1, 0, EUExCallback.F_C_TEXT, tPath);
 						}
 					}
 				}
+			} else if (requestCode == 68) {
+				Log.i(TAG, "68");
+				removeViewCameraFromWindow(null);// 移除自定义View相机
+				String photoPath = data.getStringExtra("photoPath");
+				String jsonResult = "";
+				JSONObject jsonObject = new JSONObject();
+				try {
+					jsonObject.put("photoPath", photoPath);
+					jsonObject.put("location", location);
+					jsonResult = jsonObject.toString();
+				} catch (JSONException e) {
+					e.printStackTrace();
+				}
+				jsCallback(FUNC_OPEN_VIEW_CAMERA_CALLBACK, 0, EUExCallback.F_C_TEXT, jsonResult);
+			}
+		} else if (resultCode == Activity.RESULT_CANCELED) {// 如果是取消标志 change by
+															// waka 2016-01-28
+			if (requestCode == 68) {// 如果是SecondActivity传回来的取消标记
+				mCameraView.setCameraTakingPhoto(false);// 设置正在照相标记为false
 			}
 		}
-
 	}
 
 	/**
@@ -351,8 +524,18 @@ public class EUExCamera extends EUExBase {
 	 * @return
 	 */
 	private String makePictrue(File inPath, int degree) {
-		String newPath = mBrwView.getCurrentWidget().getWidgetPath()
-				+ getName();
+
+		// String newPath = BUtility.makeRealPath("wgt://"+ getName(),
+		// mBrwView.getWidgetPath(), mBrwView.getWidgetType());
+		String rootPath = Environment.getExternalStorageDirectory().toString() + "/widgetone/apps/"
+				+ mBrwView.getRootWidget().m_appId + "/photo";
+		File file = new File(rootPath);
+		if (!file.exists()) {
+			file.mkdirs();// 如果不存在，则创建所有的父文件夹
+		}
+		String newPath = Environment.getExternalStorageDirectory().toString() + "/widgetone/apps/"
+				+ mBrwView.getRootWidget().m_appId + "/" + getName();
+		Log.i("ttest", "newPath---->" + newPath);
 		BitmapFactory.Options opts = new BitmapFactory.Options();
 		Bitmap boundBitmap = null;
 		LogUtils.o("rotate: " + degree);
@@ -360,10 +543,12 @@ public class EUExCamera extends EUExBase {
 			LogUtils.o("mWillCompress == true");
 			opts.inJustDecodeBounds = true;
 			String path = inPath.getAbsolutePath();
-			boundBitmap = BitmapFactory.decodeFile(inPath.getAbsolutePath(),
-					opts);
+			try {
+				boundBitmap = BitmapFactory.decodeStream(new FileInputStream(path), null, opts);
+			} catch (FileNotFoundException e) {
+				e.printStackTrace();
+			}
 			LogUtils.o(path);
-			opts.inJustDecodeBounds = false;
 			if (mQuality > 0) {
 				LogUtils.o("mQuality > 0");
 				;
@@ -383,34 +568,31 @@ public class EUExCamera extends EUExBase {
 			opts.inTempStorage = new byte[64 * 1024];
 			mQuality = 100;
 		}
+		opts.inSampleSize = 2;
+		opts.inPurgeable = true;
+		opts.inInputShareable = true;
+		opts.inTempStorage = new byte[64 * 1024];
+		mQuality = 60;
+		opts.inJustDecodeBounds = false;
 		LogUtils.o("inSampleSize == " + opts.inSampleSize);
-		Bitmap picture = null;
 		File newFile = new File(newPath);
 		try {
-			Bitmap tmpPicture = BitmapFactory.decodeFile(
-					inPath.getAbsolutePath(), opts);
-			picture = tmpPicture;
+			Bitmap tmpPicture = BitmapFactory.decodeStream(new FileInputStream(inPath.getAbsolutePath()), null, opts);
 			if (degree > 0 && null != tmpPicture) {
-				picture = Util.rotate(tmpPicture, degree);
-				tmpPicture.recycle();
+				tmpPicture = Util.rotate(tmpPicture, degree);
 			}
-			BufferedOutputStream bos = new BufferedOutputStream(
-					new FileOutputStream(newFile));
-			picture.compress(Bitmap.CompressFormat.JPEG, mQuality, bos);
+			BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(newFile));
+			tmpPicture.compress(Bitmap.CompressFormat.JPEG, mQuality, bos);
 			bos.flush();
 			bos.close();
 		} catch (OutOfMemoryError e) {
-			Toast.makeText(mContext, "照片尺寸过大，内存溢出，\n请降低尺寸拍摄！",
-					Toast.LENGTH_LONG).show();
+			Toast.makeText(mContext, "照片尺寸过大，内存溢出，\n请降低尺寸拍摄！", Toast.LENGTH_LONG).show();
 			LogUtils.o(e.toString());
 			return null;
 		} catch (IOException e) {
 			LogUtils.o(e.toString());
 			return null;
 		} finally {
-			if (null != picture) {
-				picture.recycle();
-			}
 			inPath.delete();
 			if (boundBitmap != null) {
 				boundBitmap.recycle();
@@ -422,6 +604,7 @@ public class EUExCamera extends EUExBase {
 		return newPath;
 	}
 
+	@SuppressLint("SimpleDateFormat")
 	private String getName() {
 		Date date = new Date();
 		SimpleDateFormat df = new SimpleDateFormat("yyyyMMddhhmmss");
@@ -429,8 +612,7 @@ public class EUExCamera extends EUExBase {
 	}
 
 	private void checkPath() {
-		String widgetPath = mBrwView.getCurrentWidget().getWidgetPath()
-				+ "photo";
+		String widgetPath = mBrwView.getCurrentWidget().getWidgetPath() + "photo";
 		File temp = new File(widgetPath);
 		if (!temp.exists()) {
 			temp.mkdirs();
@@ -443,5 +625,16 @@ public class EUExCamera extends EUExBase {
 			m_tempPath = null;
 		}
 		return true;
+	}
+
+	/**
+	 * CameraView的关闭回调，在这里移除View
+	 */
+	@Override
+	public void callbackClose() {
+		if (null != view) {
+			removeViewFromCurrentWindow(view);
+			view = null;
+		}
 	}
 }
