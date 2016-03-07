@@ -4,6 +4,7 @@
     <activity
         android:name="org.zywx.wbpalmstar.plugin.uexcamera.CustomCamera"
         android:configChanges="orientation|keyboardHidden"
+        android:exported="false"
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
         <intent-filter>
             <action android:name="android.intent.action.CAMERA_PLUGIN" />
@@ -13,6 +14,7 @@
     </activity>
     <activity
         android:name="org.zywx.wbpalmstar.plugin.uexcamera.ViewCamera.SecondActivity"
+        android:exported="false"
         android:label="@string/plugin_camera_title_activity_second"
         android:theme="@android:style/Theme.Holo.Light" >
     </activity>

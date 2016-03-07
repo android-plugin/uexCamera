@@ -269,11 +269,17 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 			try {
 				camera = Camera.open();// 初始化camera
 			} catch (RuntimeException e) {
-				Toast.makeText(context, "相机打开失败，请检查内存是否充足", Toast.LENGTH_SHORT).show();
+				Toast.makeText(context, "相机打开失败，请检查内存是否充足，是否允许程序调用摄像头", Toast.LENGTH_SHORT).show();
 				e.printStackTrace();
 			}
 		}
 		try {
+
+			if (camera == null) {
+
+				Log.i(TAG, "surfaceCreated	camera == null");
+				return;
+			}
 			camera.setPreviewDisplay(surfaceHolder);// 设置holder主要是用于surfaceView的图片的实时预览，以及获取图片等功能，可以理解为控制camera的操作
 
 			Camera.Parameters parameters = camera.getParameters();// 得到一个已有的(默认的)设置
@@ -342,6 +348,13 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 	 */
 	@Override
 	public void surfaceDestroyed(SurfaceHolder holder) {
+
+		if (camera == null) {
+
+			Log.e(TAG, "surfaceDestroyed	camera == null");
+			return;
+		}
+
 		camera.stopPreview();
 		camera.release();
 		camera = null;
