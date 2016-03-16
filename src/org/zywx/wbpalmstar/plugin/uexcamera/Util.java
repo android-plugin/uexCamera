@@ -56,8 +56,7 @@ public class Util {
 	public static Bitmap rotateAndMirror(Bitmap b, int degrees, boolean mirror) {
 		if ((degrees != 0 || mirror) && b != null) {
 			Matrix m = new Matrix();
-			m.setRotate(degrees, (float) b.getWidth() / 2,
-					(float) b.getHeight() / 2);
+			m.setRotate(degrees, (float) b.getWidth() / 2, (float) b.getHeight() / 2);
 			if (mirror) {
 				m.postScale(-1, 1);
 				degrees = (degrees + 360) % 360;
@@ -66,14 +65,12 @@ public class Util {
 				} else if (degrees == 90 || degrees == 270) {
 					m.postTranslate((float) b.getHeight(), 0);
 				} else {
-					throw new IllegalArgumentException("Invalid degrees="
-							+ degrees);
+					throw new IllegalArgumentException("Invalid degrees=" + degrees);
 				}
 			}
 
 			try {
-				Bitmap b2 = Bitmap.createBitmap(b, 0, 0, b.getWidth(),
-						b.getHeight(), m, true);
+				Bitmap b2 = Bitmap.createBitmap(b, 0, 0, b.getWidth(), b.getHeight(), m, true);
 				if (b != b2) {
 					b.recycle();
 					b = b2;
@@ -102,10 +99,8 @@ public class Util {
 	 * BitmapFactory downsamples an image by 2 even though the request is 3. So
 	 * we round up the sample size to avoid OOM.
 	 */
-	public static int computeSampleSize(BitmapFactory.Options options,
-			int minSideLength, int maxNumOfPixels) {
-		int initialSize = computeInitialSampleSize(options, minSideLength,
-				maxNumOfPixels);
+	public static int computeSampleSize(BitmapFactory.Options options, int minSideLength, int maxNumOfPixels) {
+		int initialSize = computeInitialSampleSize(options, minSideLength, maxNumOfPixels);
 
 		int roundedSize;
 		if (initialSize <= 8) {
@@ -120,24 +115,21 @@ public class Util {
 		return roundedSize;
 	}
 
-	private static int computeInitialSampleSize(BitmapFactory.Options options,
-			int minSideLength, int maxNumOfPixels) {
+	private static int computeInitialSampleSize(BitmapFactory.Options options, int minSideLength, int maxNumOfPixels) {
 		double w = options.outWidth;
 		double h = options.outHeight;
 
 		int lowerBound = (maxNumOfPixels == IImage.UNCONSTRAINED) ? 1
 				: (int) Math.ceil(Math.sqrt(w * h / maxNumOfPixels));
 		int upperBound = (minSideLength == IImage.UNCONSTRAINED) ? 128
-				: (int) Math.min(Math.floor(w / minSideLength),
-						Math.floor(h / minSideLength));
+				: (int) Math.min(Math.floor(w / minSideLength), Math.floor(h / minSideLength));
 
 		if (upperBound < lowerBound) {
 			// return the larger one when there is no overlapping zone.
 			return lowerBound;
 		}
 
-		if ((maxNumOfPixels == IImage.UNCONSTRAINED)
-				&& (minSideLength == IImage.UNCONSTRAINED)) {
+		if ((maxNumOfPixels == IImage.UNCONSTRAINED) && (minSideLength == IImage.UNCONSTRAINED)) {
 			return 1;
 		} else if (minSideLength == IImage.UNCONSTRAINED) {
 			return lowerBound;
@@ -165,15 +157,13 @@ public class Util {
 	 * @modified 此方法从网络取得，并修改了一些处理逻辑，使其更准确，压缩比更大。
 	 * @return The value to be used for inSampleSize
 	 */
-	public static int calculateInSampleSize(BitmapFactory.Options options,
-			int reqWidth, int reqHeight) {
+	public static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
 		// Raw height and width of image
 		final int height = options.outHeight;
 		final int width = options.outWidth;
 
 		LogUtils.o("reqWidth== " + reqWidth + " reqHeight== " + reqHeight);
-		LogUtils.o("options.outHeight== " + options.outHeight
-				+ " options.outWidth== " + options.outWidth);
+		LogUtils.o("options.outHeight== " + options.outHeight + " options.outWidth== " + options.outWidth);
 
 		int inSampleSize = 1;
 
@@ -185,8 +175,7 @@ public class Util {
 			// Calculate the largest inSampleSize value that is a power of 2 and
 			// keeps both
 			// height and width larger than the requested height and width.
-			while ((height / inSampleSize) > reqHeight
-					&& (width / inSampleSize) > reqWidth)
+			while ((height / inSampleSize) > reqHeight && (width / inSampleSize) > reqWidth)
 			// 此处判断如果宽和高均比要求的高度和宽度大，则将压缩比翻倍
 			{
 				inSampleSize *= 2;
@@ -237,20 +226,16 @@ public class Util {
 		try {
 			BitmapFactory.Options options = new BitmapFactory.Options();
 			options.inJustDecodeBounds = true;
-			BitmapFactory
-					.decodeByteArray(jpegData, 0, jpegData.length, options);
-			if (options.mCancel || options.outWidth == -1
-					|| options.outHeight == -1) {
+			BitmapFactory.decodeByteArray(jpegData, 0, jpegData.length, options);
+			if (options.mCancel || options.outWidth == -1 || options.outHeight == -1) {
 				return null;
 			}
-			options.inSampleSize = computeSampleSize(options,
-					IImage.UNCONSTRAINED, maxNumOfPixels);
+			options.inSampleSize = computeSampleSize(options, IImage.UNCONSTRAINED, maxNumOfPixels);
 			options.inJustDecodeBounds = false;
 
 			options.inDither = false;
 			options.inPreferredConfig = Bitmap.Config.ARGB_8888;
-			return BitmapFactory.decodeByteArray(jpegData, 0, jpegData.length,
-					options);
+			return BitmapFactory.decodeByteArray(jpegData, 0, jpegData.length, options);
 		} catch (OutOfMemoryError ex) {
 			Log.e(TAG, "Got oom exception ", ex);
 			return null;
@@ -350,8 +335,7 @@ public class Util {
 	}
 
 	public static int getDisplayRotation(Activity activity) {
-		int rotation = activity.getWindowManager().getDefaultDisplay()
-				.getRotation();
+		int rotation = activity.getWindowManager().getDefaultDisplay().getRotation();
 		switch (rotation) {
 		case Surface.ROTATION_0:
 			return 0;
@@ -366,8 +350,7 @@ public class Util {
 	}
 
 	@SuppressLint("NewApi")
-	public static void setCameraDisplayOrientation(Activity activity,
-			int cameraId, Camera camera) {
+	public static void setCameraDisplayOrientation(Activity activity, int cameraId, Camera camera) {
 		// See android.hardware.Camera.setCameraDisplayOrientation for
 		// documentation.
 		Camera.CameraInfo info = new Camera.CameraInfo();
