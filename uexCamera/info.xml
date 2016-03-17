@@ -1,8 +1,8 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="3.0.18.5" build="18">
-        <info>18.5:优化了CameraView照片处理，优化了OOM问题处理，并做了为null判断，避免程序因空指针崩溃</info>
+        uexName="uexCamera" version="3.0.18" build="18">
+        <info>18:优化了CameraView代码逻辑，优化了照片处理，优化了OOM问题处理，并做了为null判断，避免程序因空指针崩溃</info>
         <build>17:修复Activity拒绝服务漏洞的问题，修复了openViewCamera拒绝使用系统拍照权限后程序崩溃的问题</build>
         <build>16:修复了在三星手机上照片旋转方向不一致的问题;修复了多次点击照相按钮，再点重拍照相按钮失效的问题</build>
         <build>15:修复了少写mCamera.setPreviewCallback(null)导致崩溃的问题</build>
