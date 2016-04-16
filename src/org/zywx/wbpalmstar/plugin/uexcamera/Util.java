@@ -365,4 +365,5 @@ public class Util {
 		}
 		camera.setDisplayOrientation(result);
 	}
+	
 }

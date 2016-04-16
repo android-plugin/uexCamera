@@ -15,6 +15,7 @@ import org.zywx.wbpalmstar.engine.universalex.EUExUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.EUExCamera;
 import org.zywx.wbpalmstar.plugin.uexcamera.LogUtils;
 import org.zywx.wbpalmstar.plugin.uexcamera.Util;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
 
 import android.annotation.SuppressLint;
 import android.content.Context;
@@ -197,7 +198,7 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 	private void initData() {
 
 		// 获得文件存放的路径
-		filePath = EUExCamera.filePath;
+		filePath = mEuExCamera.filePath;
 
 		// 实例化SurfaceHolder
 		mSurfaceHolder = mSurfaceView.getHolder();
@@ -600,12 +601,15 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 		// 压缩图片
 		BitmapFactory.Options options = new BitmapFactory.Options();
 		options.inJustDecodeBounds = true;// 不返回实际的bitmap，也不给其分配内存空间,但是允许我们查询图片的信息这其中就包括图片大小信息
+		@SuppressWarnings("unused")
+		Bitmap boundBitmap = BitmapFactory.decodeByteArray(data, 0, data.length, options);// 从字节流中生成一个不占内存的bitmap
 		inSampleSize = BitmapUtil.calculateInSampleSize(options, getWidth(), getHeight());// 根据CameraView宽高计算压缩比
 		options.inSampleSize = inSampleSize;
 		options.inPurgeable = true;
 		options.inInputShareable = true;
 		options.inTempStorage = new byte[64 * 1024];
 		options.inJustDecodeBounds = false;// decode到的bitmap将写入内存
+		boundBitmap = null;// 将不占内存的boundBitmap置为null
 
 		Bitmap bitmap = null;
 		FileOutputStream outputStream = null;
@@ -678,12 +682,15 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 		// 压缩图片
 		BitmapFactory.Options options = new BitmapFactory.Options();
 		options.inJustDecodeBounds = true;// 不返回实际的bitmap，也不给其分配内存空间,但是允许我们查询图片的信息这其中就包括图片大小信息
+		@SuppressWarnings("unused")
+		Bitmap boundBitmap = BitmapFactory.decodeByteArray(data, 0, data.length, options);// 从字节流中生成一个不占内存的bitmap
 		inSampleSize = BitmapUtil.calculateInSampleSize(options, getWidth(), getHeight());// 根据CameraView宽高计算压缩比
 		options.inSampleSize = inSampleSize;
 		options.inPurgeable = true;
 		options.inInputShareable = true;
 		options.inTempStorage = new byte[64 * 1024];
 		options.inJustDecodeBounds = false;// decode到的bitmap将写入内存
+		boundBitmap = null;// 将不占内存的boundBitmap置为null
 
 		Bitmap bitmap = null;
 		FileOutputStream outputStream = null;

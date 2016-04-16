@@ -61,7 +61,29 @@ var cInt = 2;
 		}
 	}
 	
+	//打开系统相机
+	function openSystemCamera(){
+		
+		var comtextareass = '0';
+		var quality = '100';
+		var photoValue = '{"width":"100","height":"50"}';
+		uexCamera.open(comtextareass, quality, photoValue);
+		
+	}
+	
+	//打开自定义相机
+	function openInternal(){
+		
+		var comtextareass = '0';
+		var quality = '100';
+		var photoValue = '{"width":"100","height":"50"}';
+		uexCamera.openInternal(comtextareass, quality, photoValue);
+		
+	}
+	
+	//打开自定义相机View
 	function openViewCamera(){
+		
 		var x = document.getElementById("x").value;
 		var y = document.getElementById("y").value;
 		var w = document.getElementById("w").value;
@@ -89,13 +111,19 @@ var cInt = 2;
 <div class="tit">Camera</div>
 	<div class="conbor">
 		<div class="consj">
+		
+		
 			<span>1.打开系统相机</span>
-			<input class="btn" type="button" value="打开" onclick="uexCamera.open('0','50');">
+			<input class="btn" type="button" value="打开" onclick="openSystemCamera();">
+			
+			
             <span>2.打开自定义相机</span>
-			<input class="btn" type="button" value="打开" onclick="uexCamera.openInternal();">
+			<input class="btn" type="button" value="打开" onclick="openInternal();">
 			<span>照片保存地址为：</span>
 			<div class="tcxx" id="zxj"></div><br>
 			<div ><img id="picc" src="" style="width:85%;height:150px;"/></div>
+			
+			
 			<span>3.openViewCamera接口</span>
 			<div class="tcxx">
 				此接口将打开一个自定义的View相机添加到当前屏幕上。
@@ -115,6 +143,8 @@ var cInt = 2;
 			<input class="btn" type="button" value="点击调用接口" onclick="openViewCamera();">
 			<span>照片保存地址为：</span>
 			<div class="tcxx" id="photo_save"></div><br><br><br><br><br><br>
+			
+			
 			<span>4.removeViewCameraFromWindow接口</span>
 			<div class="tcxx" >
 				此接口将从屏幕上移除刚刚打开的自定义View。

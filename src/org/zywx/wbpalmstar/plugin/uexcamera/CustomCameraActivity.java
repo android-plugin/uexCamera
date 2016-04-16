@@ -51,9 +51,15 @@ import android.widget.ImageView.ScaleType;
 
 import android.widget.Toast;
 
-@SuppressLint("HandlerLeak")
-public class CustomCamera extends Activity implements Callback, AutoFocusCallback {
+/**
+ * 自定义相机Activity
+ * 
+ * @author waka
+ *
+ */
+public class CustomCameraActivity extends Activity implements Callback, AutoFocusCallback {
 
+	// View
 	public SurfaceView mSurfaceView;
 	private Button mBtnCancel;
 	private Button mBtnHandler;
@@ -63,11 +69,14 @@ public class CustomCamera extends Activity implements Callback, AutoFocusCallbac
 	private Button mBtnFlash2;
 	private Button mBtnFlash3;
 	private ImageView mIvPreShow;
+
+	// Camera相关
 	public Camera mCamera;
 	public String filePath = null;// 照片保存路径
 	private boolean hasSurface;
 	private boolean isOpenFlash = true;
 	public int cameraCurrentlyLocked;
+
 	// The first rear facing camera
 	private ArrayList<Integer> flashDrawableIds;
 	private boolean mPreviewing = false;
@@ -83,6 +92,7 @@ public class CustomCamera extends Activity implements Callback, AutoFocusCallbac
 	private int current_orientation = 0;
 	private int picture_orientation = 0;
 
+	@SuppressLint("HandlerLeak")
 	private Handler mHandler = new Handler() {
 		@Override
 		public void handleMessage(Message msg) {
@@ -110,7 +120,7 @@ public class CustomCamera extends Activity implements Callback, AutoFocusCallbac
 		window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		setContentView(CRes.plugin_camera_layout);
-		filePath = getIntent().getStringExtra("photoPath");
+		filePath = getIntent().getStringExtra(Constant.INTENT_EXTRA_NAME_PHOTO_PATH);
 
 		int numberOfCameras = Camera.getNumberOfCameras();
 		CameraInfo cameraInfo = new CameraInfo();
@@ -134,7 +144,7 @@ public class CustomCamera extends Activity implements Callback, AutoFocusCallbac
 		orientationEventListener = new OrientationEventListener(this) {
 			@Override
 			public void onOrientationChanged(int orientation) {
-				CustomCamera.this.onOrientationChanged(orientation);
+				CustomCameraActivity.this.onOrientationChanged(orientation);
 			}
 		};
 
@@ -220,7 +230,7 @@ public class CustomCamera extends Activity implements Callback, AutoFocusCallbac
 					mPreviewing = false;
 					mCamera.takePicture(null, null, jpeg);
 				} else {
-					Toast.makeText(CustomCamera.this, "摄像机正忙", Toast.LENGTH_SHORT).show();
+					Toast.makeText(CustomCameraActivity.this, "摄像机正忙", Toast.LENGTH_SHORT).show();
 				}
 			}
 		});
@@ -573,7 +583,7 @@ public class CustomCamera extends Activity implements Callback, AutoFocusCallbac
 			isHasPic = true;
 			mIvPreShow.setVisibility(View.VISIBLE);
 		} else {
-			Toast.makeText(CustomCamera.this, "拍照失败", Toast.LENGTH_SHORT).show();
+			Toast.makeText(CustomCameraActivity.this, "拍照失败", Toast.LENGTH_SHORT).show();
 		}
 	}
 
