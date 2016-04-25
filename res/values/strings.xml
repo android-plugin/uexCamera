@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8" standalone="no"?>
 <resources>
 
-<!-- common use通用字符串 -->
+    <!-- common use通用字符串 -->
     <string name="app_name">uexCamera</string>
     <string name="back">返回</string>
     <string name="confirm">确定</string>
@@ -33,7 +33,6 @@
     <string name="browser_exitdialog_msg">退出提示</string>
     <string name="browser_dialog_error">错误提示</string>
     <string name="browser_init_error">程序不完整</string>
-
     <string name="appkey">82ae9d4e-557e-4491-b2b9-822b6b7b8d4d</string>
     <string name="push">true</string>
     <string name="appstatus">6D4F716AB6384036B4F0AC</string>
@@ -46,13 +45,17 @@
     <string name="platform_myspace_release_to_refresh">释放刷新推荐列表</string>
     <string name="platform_myspace_loading">加载中...</string>
     <string name="platform_myspace_tap_to_refresh">点击刷新推荐列表</string>
-    
+
     <!-- uexCamera -->
+    <!-- EUExCamera -->
+    <string name="plugin_camera_low_memory_tips">内存不足,无法打开相机</string>
+
+    <!-- CameraView -->
     <string name="plugin_camera_cancel">取消</string>
-	<string name="plugin_camera_complete">完成</string>
-	<string name="plugin_camera_location">传入的地理位置</string>
+    <string name="plugin_camera_complete">完成</string>
+    <string name="plugin_camera_location">传入的地理位置</string>
     <string name="plugin_camera_take_photo_again">重拍</string>
     <string name="plugin_camera_submit">提交</string>
     <string name="plugin_camera_title_activity_second">uexCameraSecondActivity</string>
-    
+
 </resources>
