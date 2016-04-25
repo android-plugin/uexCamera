@@ -19,10 +19,10 @@ import android.widget.TextView;
 public class SecondActivity extends Activity implements OnClickListener {
 	private static final String TAG = "SecondActivity";
 	private ImageView imgPhoto;
-	private TextView tvLocation;
+	private TextView tvLabel;
 	private Button btnAgain, btnSubmit;
 	private String fileName;
-	private String location;
+	private String label;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -36,7 +36,7 @@ public class SecondActivity extends Activity implements OnClickListener {
 
 	private void initView() {
 		imgPhoto = (ImageView) findViewById(EUExUtil.getResIdID("plugin_camera_imgPhoto"));
-		tvLocation = (TextView) findViewById(EUExUtil.getResIdID("plugin_camera_tvLocation"));
+		tvLabel = (TextView) findViewById(EUExUtil.getResIdID("plugin_camera_tvLocation"));
 		btnAgain = (Button) findViewById(EUExUtil.getResIdID("plugin_camera_btnAgain"));
 		btnSubmit = (Button) findViewById(EUExUtil.getResIdID("plugin_camera_btnSubmit"));
 	}
@@ -44,8 +44,8 @@ public class SecondActivity extends Activity implements OnClickListener {
 	private void initData() {
 		Intent intent = getIntent();
 		fileName = intent.getStringExtra("fileName");
-		location = intent.getStringExtra("location");
-		tvLocation.setText(location);
+		label = intent.getStringExtra("label");
+		tvLabel.setText(label);
 		// 从文件中读取图片，并将图片赋给layoutPhoto的背景，需要放大两倍
 		Bitmap bitmap = null;
 		if (bitmap == null) {

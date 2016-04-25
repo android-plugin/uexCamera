@@ -18,6 +18,7 @@ import org.zywx.wbpalmstar.plugin.uexcamera.ViewCamera.CameraView;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.FileUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.MemoryUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.MyLog;
 
 import android.app.Activity;
 import android.content.Context;
@@ -58,8 +59,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 	private int mPhotoWidth;// 压缩图片目标宽度
 	private int mPhotoHeight;// 压缩图片目标高度
 
-	public String filePath = "";
-	private String location = "";
+	private String label = "";// 拍照时显示在界面中的提示语或标签
 	private View view;// 自定义相机View
 	private CameraView mCameraView;// 自定义相机View实例
 
@@ -71,8 +71,6 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 	 */
 	public EUExCamera(Context context, EBrowserView inParent) {
 		super(context, inParent);
-		filePath = mBrwView.getWidgetPath() + "uexViewCameraPhotos";
-		Log.i(TAG, "filePath--->" + filePath);
 	}
 
 	/**
@@ -397,7 +395,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 		String inY = parm[1];
 		String inW = parm[2];
 		String inH = parm[3];
-		location = parm[4];
+		label = parm[4];
 		// 新字段 图片质量
 		int quality = -1;// 初始化为-1
 		try {
@@ -411,7 +409,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 		}
-		Log.i(TAG, "location" + location);
+		Log.i(TAG, "location" + label);
 		Log.i("quality", "quality openViewCamera---->" + quality);
 
 		int x = 0;
@@ -454,8 +452,11 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 			view = View.inflate(mContext, EUExUtil.getResLayoutID("plugin_camera_view_camera"), null);// 用view引入布局文件
 			mCameraView = (CameraView) view;// 将View强转为CameraView，获得CameraView的实例
 			mCameraView.setmEuExCamera(this);// 设置EUExCamera的实例
+			String filePath = mBrwView.getWidgetPath() + "uexViewCameraPhotos";
+			MyLog.getLog().i("filePath = " + filePath);
+			mCameraView.setFilePath(filePath);
 			mCameraView.setCallbackCameraViewClose(this);// 注册callback，将当前类传入
-			mCameraView.setLocationText(location);// 调用方法写入地址
+			mCameraView.setLabelText(label);// 调用方法写入地址
 			if (quality != -1) {// 如果quality格式正确
 				mCameraView.setQuality(quality);
 			}
@@ -734,7 +735,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 				JSONObject jsonObject = new JSONObject();
 				try {
 					jsonObject.put("photoPath", photoPath);
-					jsonObject.put("location", location);
+					jsonObject.put("location", label);
+					jsonObject.put("label", label);
 					jsonResult = jsonObject.toString();
 				} catch (JSONException e) {
 					e.printStackTrace();

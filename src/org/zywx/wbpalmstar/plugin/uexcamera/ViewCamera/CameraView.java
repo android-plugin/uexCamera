@@ -76,7 +76,7 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 	private SurfaceView mSurfaceView;// 预览的SurfaceView
 	private SurfaceHolder mSurfaceHolder;
 	private Button btnTakePhoto, btnClose, btnDrawLine, btnOverturnCamera, btnFlash;// 各种按钮
-	private TextView tvLocation;// 位置文本
+	private TextView tvLabel;// 位置文本
 	private View viewFocus;// 聚焦视图View
 
 	// Camera信息
@@ -139,7 +139,7 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 
 				// 跳转到第二个Activity，携带着文件路径
 				Intent intent = new Intent(mContext, SecondActivity.class);
-				intent.putExtra("location", tvLocation.getText().toString());
+				intent.putExtra("label", tvLabel.getText().toString());
 				intent.putExtra("fileName", fileName);
 				if (mEuExCamera != null) {
 					mEuExCamera.startActivityForResult(intent, 68);
@@ -183,7 +183,7 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 
 		// 初始化View
 		mSurfaceView = (SurfaceView) findViewById(EUExUtil.getResIdID("plugin_camera_surfaceView"));
-		tvLocation = (TextView) findViewById(EUExUtil.getResIdID("plugin_camera_tvLocation"));
+		tvLabel = (TextView) findViewById(EUExUtil.getResIdID("plugin_camera_tvLocation"));
 		btnTakePhoto = (Button) findViewById(EUExUtil.getResIdID("plugin_camera_btnTakePhoto"));
 		btnClose = (Button) findViewById(EUExUtil.getResIdID("plugin_camera_btnClose"));
 		btnDrawLine = (Button) findViewById(EUExUtil.getResIdID("plugin_camera_btnDrawLine"));
@@ -198,7 +198,7 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 	private void initData() {
 
 		// 获得文件存放的路径
-		filePath = mEuExCamera.filePath;
+		// filePath = mEuExCamera.filePath;
 
 		// 实例化SurfaceHolder
 		mSurfaceHolder = mSurfaceView.getHolder();
@@ -277,6 +277,15 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 	 */
 	public void setmEuExCamera(EUExCamera mEuExCamera) {
 		this.mEuExCamera = mEuExCamera;
+	}
+
+	/**
+	 * 设置文件存储路径
+	 * 
+	 * @param filePath
+	 */
+	public void setFilePath(String filePath) {
+		this.filePath = filePath;
 	}
 
 	/**
@@ -782,8 +791,8 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 	 * 
 	 * @param string
 	 */
-	public void setLocationText(String string) {
-		tvLocation.setText(string);
+	public void setLabelText(String string) {
+		tvLabel.setText(string);
 	}
 
 	/**
