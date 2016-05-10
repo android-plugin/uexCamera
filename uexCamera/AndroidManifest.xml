@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest>
 
+    <!-- uexCamera -->
     <activity
-        android:name="org.zywx.wbpalmstar.plugin.uexcamera.CustomCamera"
+        android:name="org.zywx.wbpalmstar.plugin.uexcamera.CustomCameraActivity"
         android:configChanges="orientation|keyboardHidden"
         android:exported="false"
         android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
@@ -19,16 +20,13 @@
         android:theme="@android:style/Theme.Holo.Light" >
     </activity>
 
-    <!-- uexCamera -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+
     <!-- 摄像头权限 -->
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- 闪光灯权限 -->
     <uses-permission android:name="android.permission.FLASHLIGHT" />
     <!-- 在SDCard中创建与删除文件权限 -->
     <uses-permission android:name="android.permission.MOUNT_UNMOUNT_FILESYSTEMS" />
-    <!-- 写入SD卡权限 -->
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
 
     <!-- 摄像头功能 -->
     <uses-feature android:name="android.hardware.camera" />
