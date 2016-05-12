@@ -18,7 +18,7 @@ import org.zywx.wbpalmstar.plugin.uexcamera.ViewCamera.CameraView;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.FileUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.MemoryUtil;
-import org.zywx.wbpalmstar.plugin.uexcamera.utils.MyLog;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.MLog;
 
 import android.app.Activity;
 import android.content.Context;
@@ -32,7 +32,6 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
-import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.webkit.URLUtil;
@@ -116,7 +115,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 				value = Integer.parseInt(parm[0]);
 			} catch (NumberFormatException e) {
 				e.printStackTrace();
-				Log.e(TAG, "【open】 NumberFormatException " + e.getMessage(), e);
+				MLog.getIns().e(e);
 			}
 			mIsCompress = value == 0 ? true : false;
 
@@ -131,7 +130,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 					quality = Integer.parseInt(parm[1]);
 				} catch (NumberFormatException e) {
 					e.printStackTrace();
-					Log.e(TAG, "【open】 【parm.length == 2】 quality  NumberFormatException" + e.getMessage(), e);
+					MLog.getIns().e(e);
 				}
 				mQuality = quality;
 
@@ -163,14 +162,14 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 					} catch (JSONException e) {
 
 						e.printStackTrace();
-						Log.e(TAG, "【open】 【parm.length == 3】 photoValue  JSONException" + e.getMessage(), e);
+						MLog.getIns().e(e);
 						mPhotoWidth = -1;
 						mPhotoHeight = -1;
 
 					} catch (NumberFormatException e) {
 
 						e.printStackTrace();
-						Log.e(TAG, "【open】 【parm.length == 3】 photoValue  NumberFormatException" + e.getMessage(), e);
+						MLog.getIns().e(e);
 						mPhotoWidth = -1;
 						mPhotoHeight = -1;
 
@@ -182,7 +181,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 		// 如果系统认为内存低
 		if (MemoryUtil.isLowMemory(mContext)) {
 
-			Log.i(TAG, "【open】	   内存不足,无法打开相机   memoryInfo.lowMemory == true ");
+			MLog.getIns().e("内存不足,无法打开相机   memoryInfo.lowMemory == true");
 			Toast.makeText(mContext, EUExUtil.getString("plugin_camera_low_memory_tips"), Toast.LENGTH_LONG).show();
 			Runtime.getRuntime().gc();// 提醒垃圾回收器
 			return;
@@ -195,7 +194,9 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 			if (!mIsCompress) {
 
 				// 直接已最终目录作为文件名
-				String path = mBrwView.getCurrentWidget().getWidgetPath() + getName();
+				String folderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/widgetone/apps/" + mBrwView.getRootWidget().m_appId + "/photo";// 获得文件夹路径
+				FileUtil.checkFolderPath(folderPath);// 如果不存在，则创建所有的父文件夹
+				String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/widgetone/apps/" + mBrwView.getRootWidget().m_appId + "/" + getName();// 获得新的存放目录
 				mTempPath = new File(path);
 			} else {
 
@@ -209,13 +210,14 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 					mTempPath.createNewFile();
 				} catch (IOException e) {
 					e.printStackTrace();
-					Log.e(TAG, "【open】	 【mTempPath.createNewFile()】" + e.getMessage(), e);
+					MLog.getIns().e(e);
 				}
 			}
 
 			// 发Intent调用系统相机
 			Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 			Uri uri = Uri.fromFile(mTempPath);
+			MLog.getIns().i("uri = " + uri.toString());
 			cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri);// 设置系统相机拍摄照片完成后图片文件的存放地址
 			cameraIntent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);// 设置IntentFlag,singleTask
 			startActivityForResult(cameraIntent, Constant.REQUEST_CODE_SYSTEM_CAMERA);
@@ -225,7 +227,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 		// 如果SD卡不可用
 		else {
 
-			Log.i(TAG, "【open】 SD卡不可用");
+			MLog.getIns().e("SD卡不可用");
 			Toast.makeText(mContext, EUExUtil.getString("error_sdcard_is_not_available"), Toast.LENGTH_SHORT).show();
 			errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, EUExUtil.getString("error_sdcard_is_not_available"));
 			return;
@@ -262,7 +264,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 				value = Integer.parseInt(parm[0]);
 			} catch (NumberFormatException e) {
 				e.printStackTrace();
-				Log.e(TAG, "【openInternal】 NumberFormatException " + e.getMessage(), e);
+				MLog.getIns().e(e);
 			}
 			mIsCompress = value == 0 ? true : false;
 
@@ -277,7 +279,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 					quality = Integer.parseInt(parm[1]);
 				} catch (NumberFormatException e) {
 					e.printStackTrace();
-					Log.e(TAG, "【openInternal】 【parm.length == 2】 quality  NumberFormatException" + e.getMessage(), e);
+					MLog.getIns().e(e);
 				}
 				mQuality = quality;
 
@@ -309,16 +311,14 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 					} catch (JSONException e) {
 
 						e.printStackTrace();
-						Log.e(TAG, "【openInternal】 【parm.length == 3】 photoValue  JSONException" + e.getMessage(), e);
+						MLog.getIns().e(e);
 						mPhotoWidth = -1;
 						mPhotoHeight = -1;
 
 					} catch (NumberFormatException e) {
 
 						e.printStackTrace();
-						Log.e(TAG,
-								"【openInternal】 【parm.length == 3】 photoValue  NumberFormatException" + e.getMessage(),
-								e);
+						MLog.getIns().e(e);
 						mPhotoWidth = -1;
 						mPhotoHeight = -1;
 
@@ -330,7 +330,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 		// 如果系统认为内存低
 		if (MemoryUtil.isLowMemory(mContext)) {
 
-			Log.i(TAG, "【openInternal】	   内存不足,无法打开相机   memoryInfo.lowMemory == true ");
+			MLog.getIns().e("内存不足,无法打开相机   memoryInfo.lowMemory == true");
 			Toast.makeText(mContext, EUExUtil.getString("plugin_camera_low_memory_tips"), Toast.LENGTH_LONG).show();
 			Runtime.getRuntime().gc();// 提醒垃圾回收器
 			return;
@@ -343,7 +343,9 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 			if (!mIsCompress) {
 
 				// 直接已最终目录作为文件名
-				String path = mBrwView.getCurrentWidget().getWidgetPath() + getName();
+				String folderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/widgetone/apps/" + mBrwView.getRootWidget().m_appId + "/photo";// 获得文件夹路径
+				FileUtil.checkFolderPath(folderPath);// 如果不存在，则创建所有的父文件夹
+				String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/widgetone/apps/" + mBrwView.getRootWidget().m_appId + "/" + getName();// 获得新的存放目录
 				mTempPath = new File(path);
 			} else {
 
@@ -357,12 +359,13 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 					mTempPath.createNewFile();
 				} catch (IOException e) {
 					e.printStackTrace();
-					Log.e(TAG, "【openInternal】	 【mTempPath.createNewFile()】" + e.getMessage(), e);
+					MLog.getIns().e(e);
 				}
 			}
 
 			// 发Intent调用自定义相机
 			Intent camaIntent = new Intent();
+			MLog.getIns().i("mTempPath = " + mTempPath);
 			camaIntent.setClass(mContext, CustomCameraActivity.class);
 			camaIntent.putExtra(Constant.INTENT_EXTRA_NAME_PHOTO_PATH, mTempPath.getAbsolutePath());
 			camaIntent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
@@ -373,7 +376,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 		// 如果SD卡不可用
 		else {
 
-			Log.i(TAG, "【openInternal】 SD卡不可用");
+			MLog.getIns().e("SD卡不可用");
 			Toast.makeText(mContext, EUExUtil.getString("error_sdcard_is_not_available"), Toast.LENGTH_SHORT).show();
 			errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, EUExUtil.getString("error_sdcard_is_not_available"));
 			return;
@@ -409,8 +412,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 		} catch (NumberFormatException e) {
 			e.printStackTrace();
 		}
-		Log.i(TAG, "location" + label);
-		Log.i("quality", "quality openViewCamera---->" + quality);
+		MLog.getIns().i("label = " + label);
+		MLog.getIns().i("quality = " + quality);
 
 		int x = 0;
 		int y = 0;
@@ -453,7 +456,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 			mCameraView = (CameraView) view;// 将View强转为CameraView，获得CameraView的实例
 			mCameraView.setmEuExCamera(this);// 设置EUExCamera的实例
 			String filePath = mBrwView.getWidgetPath() + "uexViewCameraPhotos";
-			MyLog.getLog().i("filePath = " + filePath);
+			MLog.getIns().i("filePath = " + filePath);
 			mCameraView.setFilePath(filePath);
 			mCameraView.setCallbackCameraViewClose(this);// 注册callback，将当前类传入
 			mCameraView.setLabelText(label);// 调用方法写入地址
@@ -554,7 +557,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 					if (null != mTempPath) {
 
 						finalPath = mTempPath.getAbsolutePath();
-						Log.i(TAG, "【onActivityResult】【系统相机】  finalPath = mTempPath.getAbsolutePath()");
+						MLog.getIns().i("finalPath = " + finalPath);
 
 					}
 
@@ -573,7 +576,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 							if (URLUtil.isFileUrl(url)) {
 
 								realPath = url.replace("file://", "");
-								Log.i(TAG, "【onActivityResult】【系统相机】  finalPath = mTempPath.getAbsolutePath()");
+								MLog.getIns().i("realPath = " + realPath);
 
 							}
 
@@ -613,8 +616,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 									if (!newFile.exists()) {
 										newFile.createNewFile();
 									}
-									BufferedOutputStream bos = new BufferedOutputStream(
-											new FileOutputStream(new File(newfile)));
+									BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(new File(newfile)));
 									bitmap.compress(Bitmap.CompressFormat.JPEG, 100, bos);
 									bos.flush();
 									bos.close();
@@ -632,7 +634,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 						return;
 					}
 
-					Log.i(TAG, "【onActivityResult】【系统相机】  finalPath = " + finalPath);
+					MLog.getIns().i("finalPath = " + finalPath);
 
 					if (URLUtil.isFileUrl(finalPath)) {
 						finalPath = finalPath.replace("file://", "");
@@ -674,7 +676,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 						String photoPath = makePictrue(new File(finalPath), degree);
 						if (null == photoPath) {
 
-							Log.e(TAG, "【onActivityResult】【系统相机】  makePictrue return null");
+							MLog.getIns().e("null == photoPath");
 							errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
 
 						} else {
@@ -685,7 +687,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 					}
 				} catch (Exception e) {
 					e.printStackTrace();
-					Log.e(TAG, "【onActivityResult】【系统相机】  catch (Exception e) " + e.getMessage(), e);
+					MLog.getIns().e(e);
 					errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
 					return;
 				}
@@ -728,7 +730,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 					}
 				}
 			} else if (requestCode == 68) {
-				Log.i(TAG, "68");
+				MLog.getIns().i("requestCode = " + requestCode);
 				removeViewCameraFromWindow(null);// 移除自定义View相机
 				String photoPath = data.getStringExtra("photoPath");
 				String jsonResult = "";
@@ -767,18 +769,16 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 		// mBrwView.getWidgetPath(),
 		// mBrwView.getWidgetType());
 
-		Log.i(TAG, "【makePictrue】	图片临时存放路径tempPath---->" + tempPath);
-		Log.i(TAG, "【makePictrue】	图片方向degree---->" + degree);
+		MLog.getIns().i("图片临时存放路径tempPath = " + tempPath);
+		MLog.getIns().i("图片方向degree = " + degree);
 
 		/*
 		 * 获得新的存放目录
 		 */
-		String folderPath = Environment.getExternalStorageDirectory().toString() + "/widgetone/apps/"
-				+ mBrwView.getRootWidget().m_appId + "/photo";// 获得文件夹路径
+		String folderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/widgetone/apps/" + mBrwView.getRootWidget().m_appId + "/photo";// 获得文件夹路径
 		FileUtil.checkFolderPath(folderPath);// 如果不存在，则创建所有的父文件夹
-		String newPath = Environment.getExternalStorageDirectory().toString() + "/widgetone/apps/"
-				+ mBrwView.getRootWidget().m_appId + "/" + getName();// 获得新的存放目录
-		Log.i(TAG, "【makePictrue】	newPath---->" + newPath);
+		String newPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/widgetone/apps/" + mBrwView.getRootWidget().m_appId + "/" + getName();// 获得新的存放目录
+		MLog.getIns().i("newPath = " + newPath);
 
 		/*
 		 * 压缩图片
@@ -789,27 +789,25 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
 			// 从文件中生成一个不占内存的bitmap
 			@SuppressWarnings("unused")
-			Bitmap boundBitmap = BitmapFactory.decodeStream(new FileInputStream(tempPath.getAbsolutePath()), null,
-					options);
+			Bitmap boundBitmap = BitmapFactory.decodeStream(new FileInputStream(tempPath.getAbsolutePath()), null, options);
 			boundBitmap = null;
 
 		} catch (FileNotFoundException e) {
 			e.printStackTrace();
-			Log.e(TAG, "【makePictrue】  FileNotFoundException" + e.getMessage(), e);
+			MLog.getIns().e(e);
 		}
 
 		if (mPhotoWidth != -1 && mPhotoHeight != -1) {
 
 			// 根据压缩图片目标宽高计算压缩比
 			mInSampleSize = BitmapUtil.calculateInSampleSize(options, mPhotoWidth, mPhotoHeight);
-			Log.i(TAG, "【makePictrue】	根据压缩图片目标宽高计算压缩比  mPhotoWidth = " + mPhotoWidth + " mPhotoHeight = "
-					+ mPhotoHeight + " mInSampleSize = " + mInSampleSize);
+			MLog.getIns().i("根据压缩图片目标宽高计算压缩比  mPhotoWidth = " + mPhotoWidth + " mPhotoHeight = " + mPhotoHeight + " mInSampleSize = " + mInSampleSize);
 
 		} else {
 
 			// 如果没有压缩图片目标宽高，则默认压缩比设置为1
 			mInSampleSize = 1;
-			Log.i(TAG, "【makePictrue】	没有压缩图片目标宽高，则默认压缩比设置为1");
+			MLog.getIns().i("没有压缩图片目标宽高，则默认压缩比设置为1");
 
 		}
 		options.inSampleSize = mInSampleSize;
@@ -817,8 +815,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 		options.inInputShareable = true;
 		options.inTempStorage = new byte[64 * 1024];
 		options.inJustDecodeBounds = false;// decode得到的bitmap将写入内存
-		Log.i(TAG, "【makePictrue】	压缩比mInSampleSize---->" + mInSampleSize);
-		Log.i(TAG, "【makePictrue】	压缩质量mQuality---->" + mQuality);
+		MLog.getIns().i("【makePictrue】	压缩比mInSampleSize---->" + mInSampleSize);
+		MLog.getIns().i("【makePictrue】	压缩质量mQuality---->" + mQuality);
 
 		Bitmap tempBitmap = null;
 		File newFile = new File(newPath);
@@ -828,7 +826,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 			tempBitmap = BitmapFactory.decodeStream(new FileInputStream(tempPath.getAbsolutePath()), null, options);
 
 			if (tempBitmap == null) {
-				Log.i(TAG, "【makePictrue】	生成临时位图失败，tmpPicture == null return");
+				MLog.getIns().i("【makePictrue】	生成临时位图失败，tmpPicture == null return");
 				return null;
 			}
 
@@ -839,7 +837,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 				tempBitmap = BitmapUtil.rotate(tempBitmap, degree);
 
 				if (tempBitmap == null) {
-					Log.i(TAG, "【makePictrue】	旋转临时位图失败，tmpPicture == null return");
+					MLog.getIns().i("【makePictrue】	旋转临时位图失败，tmpPicture == null return");
 					return null;
 				}
 			}
@@ -856,8 +854,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
 			// Toast.makeText(mContext, "照片尺寸过大，内存溢出，\n请降低尺寸拍摄！",
 			// Toast.LENGTH_LONG).show();
-			Log.e(TAG, "【makePictrue】 OutOfMemoryError 压缩质量mQuality = " + mQuality + " 压缩比mInSampleSize = "
-					+ mInSampleSize + e.getMessage(), e);
+			MLog.getIns().e("【makePictrue】 OutOfMemoryError 压缩质量mQuality = " + mQuality + " 压缩比mInSampleSize = " + mInSampleSize + e.getMessage(), e);
 
 			mInSampleSize = mInSampleSize * 2;// 压缩比增加
 			return makePictrue(tempPath, degree);// 继续压缩
@@ -865,12 +862,12 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 		} catch (FileNotFoundException e) {
 
 			e.printStackTrace();
-			Log.e(TAG, "【makePictrue】  FileNotFoundException" + e.getMessage(), e);
+			MLog.getIns().e(e);
 
 		} catch (IOException e) {
 
 			e.printStackTrace();
-			Log.e(TAG, "【makePictrue】  IOException" + e.getMessage(), e);
+			MLog.getIns().e(e);
 
 		} finally {
 
