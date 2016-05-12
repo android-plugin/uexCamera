@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest>
 
-    <!-- uexCamera -->
     <activity
         android:name="org.zywx.wbpalmstar.plugin.uexcamera.CustomCameraActivity"
         android:configChanges="orientation|keyboardHidden"
@@ -20,7 +19,7 @@
         android:theme="@android:style/Theme.Holo.Light" >
     </activity>
 
-
+    <!-- uexCamera -->
     <!-- 摄像头权限 -->
     <uses-permission android:name="android.permission.CAMERA" />
     <!-- 闪光灯权限 -->
