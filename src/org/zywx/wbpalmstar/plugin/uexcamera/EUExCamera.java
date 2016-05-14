@@ -806,7 +806,6 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 		} else {
 
 			// 如果没有压缩图片目标宽高，则默认压缩比设置为默认值
-			mInSampleSize = 1;
 			MLog.getIns().i("没有压缩图片目标宽高，则默认压缩比设置为" + mInSampleSize);
 
 		}
