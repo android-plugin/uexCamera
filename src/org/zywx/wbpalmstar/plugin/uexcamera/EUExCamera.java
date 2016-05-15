@@ -54,7 +54,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 	// 压缩相关成员变量
 	private boolean mIsCompress;// 是否压缩标志
 	private int mQuality;// 压缩质量
-	private int mInSampleSize;// 压缩比
+	private int mInSampleSize = 1;// 压缩比
 	private int mPhotoWidth;// 压缩图片目标宽度
 	private int mPhotoHeight;// 压缩图片目标高度
 
@@ -805,15 +805,24 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
 		} else {
 
-			// 如果没有压缩图片目标宽高，则默认压缩比设置为1
-			mInSampleSize = 1;
-			MLog.getIns().i("没有压缩图片目标宽高，则默认压缩比设置为1");
+			// 如果没有压缩图片目标宽高，则默认压缩比设置为默认值
+			MLog.getIns().i("没有压缩图片目标宽高，则默认压缩比设置为" + mInSampleSize);
 
 		}
+
+		// 如果是低内存状态
+		if (MemoryUtil.isLowMemory(mContext)) {// 判断系统是否为低内存状态
+			MLog.getIns().e("系统处于低内存状态");
+			// TODO 强制进行压缩
+			mInSampleSize = 2;
+			mQuality = 60;
+		}
+
 		options.inSampleSize = mInSampleSize;
-		options.inPurgeable = true;
-		options.inInputShareable = true;
-		options.inTempStorage = new byte[64 * 1024];
+		options.inPurgeable = true;// 为True的话表示使用BitmapFactory创建的Bitmap用于存储Pixel的内存空间在系统内存不足时可以被回收;在Android5.0已过时;http://blog.sina.com.cn/s/blog_7607703f0101fzl7.html
+		options.inInputShareable = true;// inInputShareable与inPurgeable一起使用，如果inPurgeable为false那该设置将被忽略，如果为true，那么它可以决定位图是否能够共享一个指向数据源的引用，或者是进行一份拷贝;在Android5.0已过时;http://blog.csdn.net/xu_fu/article/details/7340454
+		// options.inTempStorage = new byte[64 *
+		// 1024];//这个属性比较鸡肋,可能带来不必要的问题;http://gqdy365.iteye.com/blog/970156
 		options.inJustDecodeBounds = false;// decode得到的bitmap将写入内存
 		MLog.getIns().i("【makePictrue】	压缩比mInSampleSize---->" + mInSampleSize);
 		MLog.getIns().i("【makePictrue】	压缩质量mQuality---->" + mQuality);
@@ -856,7 +865,17 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 			// Toast.LENGTH_LONG).show();
 			MLog.getIns().e("【makePictrue】 OutOfMemoryError 压缩质量mQuality = " + mQuality + " 压缩比mInSampleSize = " + mInSampleSize + e.getMessage(), e);
 
+			if (options != null) {
+				options = null;
+			}
+			if (tempBitmap != null) {
+				tempBitmap.recycle();
+				tempBitmap = null;
+			}
+			System.gc();
+
 			mInSampleSize = mInSampleSize * 2;// 压缩比增加
+			MLog.getIns().i("mInSampleSize = " + mInSampleSize);
 			return makePictrue(tempPath, degree);// 继续压缩
 
 		} catch (FileNotFoundException e) {
@@ -873,6 +892,9 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
 			mInSampleSize = 1;// 回归正常压缩比
 
+			if (options != null) {
+				options = null;
+			}
 			if (tempBitmap != null) {
 				tempBitmap.recycle();
 				tempBitmap = null;
