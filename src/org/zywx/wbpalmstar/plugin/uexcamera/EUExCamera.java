@@ -48,8 +48,11 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 	private static final String FUNC_OPEN_VIEW_CAMERA_CALLBACK = "uexCamera.cbOpenViewCamera";// 打开自定义相机View回调
 	private static final String FUNC_CHANGE_FLASHMODE_CALLBACK = "uexCamera.cbChangeFlashMode";// 改变闪关灯模式的回调
 	private static final String FUNC_CHANGE_CAMERA_POSITION_CALLBACK = "uexCamera.cbChangeCameraPosition";// 改变摄像头位置的回调
-
 	private File mTempPath;// 临时文件路径
+    //方法对应的回调函数
+    private String openFunc;
+    private String openInternalFunc;
+    private String openViewCameraFunc;
 
 	// 压缩相关成员变量
 	private boolean mIsCompress;// 是否压缩标志
@@ -64,7 +67,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
 	/**
 	 * 构造方法
-	 * 
+	 *
 	 * @param context
 	 * @param inParent
 	 */
@@ -87,7 +90,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
 	/**
 	 * 打开系统相机
-	 * 
+	 *
 	 * @formatter:off
 	 * @param parm
 	 *            isCompress:(Number类型)可选,图片是否压缩,0表示压缩,非0或者不传表示不压缩
@@ -142,39 +145,40 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 				/**
 				 * 如果参数>=3
 				 */
-				if (parm.length >= 3) {
-
-					// 根据传入的宽高计算图片压缩比
-					String photoValue = parm[2];
-					try {
-
-						JSONObject jsonObject = new JSONObject(photoValue);
-						int width = Integer.parseInt(jsonObject.getString("width"));
-						int height = Integer.parseInt(jsonObject.getString("height"));
-
-						if (width > 0) {
-							mPhotoWidth = width;
-						}
-						if (height > 0) {
-							mPhotoHeight = height;
-						}
-
-					} catch (JSONException e) {
-
-						e.printStackTrace();
-						MLog.getIns().e(e);
-						mPhotoWidth = -1;
-						mPhotoHeight = -1;
-
-					} catch (NumberFormatException e) {
-
-						e.printStackTrace();
-						MLog.getIns().e(e);
-						mPhotoWidth = -1;
-						mPhotoHeight = -1;
-
-					}
-				}
+//				if (parm.length >= 3) {
+//
+//					// 根据传入的宽高计算图片压缩比
+//					String photoValue = parm[2];
+//					try {
+//
+//						JSONObject jsonObject = new JSONObject(photoValue);
+//						int width = Integer.parseInt(jsonObject.getString("width"));
+//						int height = Integer.parseInt(jsonObject.getString("height"));
+//
+//						if (width > 0) {
+//							mPhotoWidth = width;
+//						}
+//						if (height > 0) {
+//							mPhotoHeight = height;
+//						}
+//
+//					} catch (JSONException e) {
+//
+//						e.printStackTrace();
+//						MLog.getIns().e(e);
+//						mPhotoWidth = -1;
+//						mPhotoHeight = -1;
+//
+//					} catch (NumberFormatException e) {
+//
+//						e.printStackTrace();
+//						MLog.getIns().e(e);
+//						mPhotoWidth = -1;
+//						mPhotoHeight = -1;
+//
+//					}
+//
+//				}
 			}
 		}
 
@@ -214,6 +218,12 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 				}
 			}
 
+            int len = parm.length;
+            if (len > 1) {
+                openFunc = parm[len -1];
+
+            }
+
 			// 发Intent调用系统相机
 			Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
 			Uri uri = Uri.fromFile(mTempPath);
@@ -221,7 +231,6 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 			cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri);// 设置系统相机拍摄照片完成后图片文件的存放地址
 			cameraIntent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);// 设置IntentFlag,singleTask
 			startActivityForResult(cameraIntent, Constant.REQUEST_CODE_SYSTEM_CAMERA);
-
 		}
 
 		// 如果SD卡不可用
@@ -236,7 +245,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
 	/**
 	 * 打开自定义相机
-	 * 
+	 *
 	 * @formatter:off
 	 * @param parm
 	 *            isCompress:(Number类型)可选,图片是否压缩,0表示压缩,非0或者不传表示不压缩
@@ -291,39 +300,39 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 				/**
 				 * 如果参数>=3
 				 */
-				if (parm.length >= 3) {
-
-					// 根据传入的宽高计算图片压缩比
-					String photoValue = parm[2];
-					try {
-
-						JSONObject jsonObject = new JSONObject(photoValue);
-						int width = Integer.parseInt(jsonObject.getString("width"));
-						int height = Integer.parseInt(jsonObject.getString("height"));
-
-						if (width > 0) {
-							mPhotoWidth = width;
-						}
-						if (height > 0) {
-							mPhotoHeight = height;
-						}
-
-					} catch (JSONException e) {
-
-						e.printStackTrace();
-						MLog.getIns().e(e);
-						mPhotoWidth = -1;
-						mPhotoHeight = -1;
-
-					} catch (NumberFormatException e) {
-
-						e.printStackTrace();
-						MLog.getIns().e(e);
-						mPhotoWidth = -1;
-						mPhotoHeight = -1;
-
-					}
-				}
+//				if (parm.length >= 3) {
+//
+//					// 根据传入的宽高计算图片压缩比
+//					String photoValue = parm[2];
+//					try {
+//
+//						JSONObject jsonObject = new JSONObject(photoValue);
+//						int width = Integer.parseInt(jsonObject.getString("width"));
+//						int height = Integer.parseInt(jsonObject.getString("height"));
+//
+//						if (width > 0) {
+//							mPhotoWidth = width;
+//						}
+//						if (height > 0) {
+//							mPhotoHeight = height;
+//						}
+//
+//					} catch (JSONException e) {
+//
+//						e.printStackTrace();
+//						MLog.getIns().e(e);
+//						mPhotoWidth = -1;
+//						mPhotoHeight = -1;
+//
+//					} catch (NumberFormatException e) {
+//
+//						e.printStackTrace();
+//						MLog.getIns().e(e);
+//						mPhotoWidth = -1;
+//						mPhotoHeight = -1;
+//
+//					}
+//				}
 			}
 		}
 
@@ -362,7 +371,11 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 					MLog.getIns().e(e);
 				}
 			}
+            int len = parm.length;
+            if (len > 1) {
+                openInternalFunc = parm[len -1];
 
+            }
 			// 发Intent调用自定义相机
 			Intent camaIntent = new Intent();
 			MLog.getIns().i("mTempPath = " + mTempPath);
@@ -385,7 +398,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
 	/**
 	 * 打开自定义View相机
-	 * 
+	 *
 	 * @param parm
 	 */
 	public void openViewCamera(String[] parm) {
@@ -467,12 +480,17 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 			lparm.leftMargin = x;
 			lparm.topMargin = y;
 			addViewToCurrentWindow(mCameraView, lparm);
+            int len = parm.length;
+            if (len > 1) {
+                openViewCameraFunc = parm[len -1];
+
+            }
 		}
 	}
 
 	/**
 	 * 移除自定义相机
-	 * 
+	 *
 	 * @param parm
 	 */
 	public void removeViewCameraFromWindow(String[] parm) {
@@ -486,28 +504,28 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
 	/**
 	 * 更改闪光灯模式,只允许输入0、1、2三个数字,0代表自动，1代表开启，2代表关闭,默认为关闭
-	 * 
+	 *
 	 * @param parm
 	 */
-	public void changeFlashMode(String[] parm) {
+	public Integer changeFlashMode(String[] parm) {
 		String flashMode = parm[0];
 		if (flashMode.equals("0") || flashMode.equals("1") || flashMode.equals("2")) {
 			mCameraView.setFlashMode(Integer.valueOf(flashMode));
-			jsCallback(FUNC_CHANGE_FLASHMODE_CALLBACK, 0, EUExCallback.F_C_TEXT, flashMode);
+			return Integer.parseInt(flashMode);
 		} else {
-			jsCallback(FUNC_CHANGE_FLASHMODE_CALLBACK, 0, EUExCallback.F_C_TEXT, "-1");
+			return -1;
 		}
 	}
 
 	/**
 	 * 设置前后摄像头,只允许输入0、1两个数字,0代表前置，1代表后置,默认为后置
-	 * 
+	 *
 	 * @param parm
 	 */
-	public void changeCameraPosition(String[] parm) {
+	public Integer changeCameraPosition(String[] parm) {
 		String cameraPosition = parm[0];
 		if (view == null) {
-			return;
+			return 0;
 		}
 		if (cameraPosition.equals("0")) {
 			CameraView.cameraPosition = 1;
@@ -517,7 +535,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 					mCameraView.overturnCamera();
 				}
 			});
-			jsCallback(FUNC_CHANGE_CAMERA_POSITION_CALLBACK, 0, EUExCallback.F_C_TEXT, cameraPosition);
+            jsCallback(FUNC_CHANGE_CAMERA_POSITION_CALLBACK, 0, EUExCallback.F_C_TEXT, cameraPosition);
+            return Integer.parseInt(cameraPosition);
 		} else if (cameraPosition.equals("1")) {
 			CameraView.cameraPosition = 0;
 			((Activity) mContext).runOnUiThread(new Runnable() {
@@ -526,9 +545,11 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 					mCameraView.overturnCamera();
 				}
 			});
-			jsCallback(FUNC_CHANGE_CAMERA_POSITION_CALLBACK, 0, EUExCallback.F_C_TEXT, cameraPosition);
+            jsCallback(FUNC_CHANGE_CAMERA_POSITION_CALLBACK, 0, EUExCallback.F_C_TEXT, cameraPosition);
+            return Integer.parseInt(cameraPosition);
 		} else {
-			jsCallback(FUNC_CHANGE_CAMERA_POSITION_CALLBACK, 0, EUExCallback.F_C_TEXT, "-1");
+            jsCallback(FUNC_CHANGE_CAMERA_POSITION_CALLBACK, 0, EUExCallback.F_C_TEXT, "-1");
+            return -1;
 		}
 
 	}
@@ -680,10 +701,9 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 							errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
 
 						} else {
-
-							jsCallback(FUNC_OPEN_CALLBACK, 0, EUExCallback.F_C_TEXT, photoPath);
-
-						}
+                            callbackToJs(Integer.parseInt(openFunc), false, photoPath);
+                            jsCallback(FUNC_OPEN_CALLBACK, 0, EUExCallback.F_C_TEXT, photoPath);
+                        }
 					}
 				} catch (Exception e) {
 					e.printStackTrace();
@@ -725,8 +745,9 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 						if (null == tPath) {
 							errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
 						} else {
-							jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, tPath);
-						}
+                            callbackToJs(Integer.parseInt(openInternalFunc), false, tPath);
+                            jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, tPath);
+                        }
 					}
 				}
 			} else if (requestCode == 68) {
@@ -743,7 +764,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 				} catch (JSONException e) {
 					e.printStackTrace();
 				}
-				jsCallback(FUNC_OPEN_VIEW_CAMERA_CALLBACK, 0, EUExCallback.F_C_TEXT, jsonResult);
+                jsCallback(FUNC_OPEN_VIEW_CAMERA_CALLBACK, 0, EUExCallback.F_C_TEXT, jsonResult);
+                callbackToJs(Integer.parseInt(openViewCameraFunc), false, jsonResult);
 			}
 		} else if (resultCode == Activity.RESULT_CANCELED) {// 如果是取消标志 change by
 															// waka 2016-01-28
@@ -755,9 +777,9 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
 	/**
 	 * 压缩拍照生成的图片
-	 * 
+	 *
 	 * 因为都是压缩标志位true时调用该方法，所以不再判断是否压缩，一律直接压缩
-	 * 
+	 *
 	 * @param tempPath_图片临时存放路径
 	 * @param degree_图片方向
 	 * @return
@@ -908,7 +930,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
 	/**
 	 * 得到文件名
-	 * 
+	 *
 	 * @return
 	 */
 	private String getName() {
