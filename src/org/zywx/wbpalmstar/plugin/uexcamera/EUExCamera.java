@@ -481,9 +481,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 			lparm.topMargin = y;
 			addViewToCurrentWindow(mCameraView, lparm);
             int len = parm.length;
-            if (len > 1) {
+            if (len == 7) {
                 openViewCameraFunc = parm[len -1];
-
             }
 		}
 	}
@@ -765,7 +764,9 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 					e.printStackTrace();
 				}
                 jsCallback(FUNC_OPEN_VIEW_CAMERA_CALLBACK, 0, EUExCallback.F_C_TEXT, jsonResult);
-                callbackToJs(Integer.parseInt(openViewCameraFunc), false, jsonResult);
+                if (null != openViewCameraFunc) {
+                    callbackToJs(Integer.parseInt(openViewCameraFunc), false, jsonObject);
+                }
 			}
 		} else if (resultCode == Activity.RESULT_CANCELED) {// 如果是取消标志 change by
 															// waka 2016-01-28

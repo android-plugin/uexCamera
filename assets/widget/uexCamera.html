@@ -28,15 +28,14 @@
     }
 
     var commonCallback = function(data) {
+        console.log("commonCallBack:" + JSON.stringify(data));
         alert("commonCallBack:" + JSON.stringify(data));
     };
 
     //打开系统相机
     function openSystemCamera(){
-
         var comtextareass = '0';
         var quality = '100';
-        var photoValue = '{"width":"100","height":"50"}';
         uexCamera.open(comtextareass, quality, commonCallback);
     }
 
