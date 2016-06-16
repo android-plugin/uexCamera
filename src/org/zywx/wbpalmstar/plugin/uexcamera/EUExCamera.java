@@ -492,11 +492,12 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 	 *
 	 * @param parm
 	 */
-	public void removeViewCameraFromWindow(String[] parm) {
+	public boolean removeViewCameraFromWindow(String[] parm) {
 		if (null != view) {
 			removeViewFromCurrentWindow(view);
 			view = null;
 		}
+        return true;
 		// Toast.makeText(mContext, "removeViewCameraFromWindow",
 		// Toast.LENGTH_SHORT).show();
 	}
