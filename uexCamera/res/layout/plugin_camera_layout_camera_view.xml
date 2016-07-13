@@ -10,7 +10,16 @@
         android:layout_width="match_parent"
         android:layout_height="match_parent" >
     </SurfaceView>
-
+    <Button
+        android:id="@+id/plugin_camera_bt_cancel"
+        android:background="@color/transparent"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:textColor="@color/white"
+        android:textSize="16sp"
+        android:text="取消"
+        android:padding="20dp"
+    />
     <!-- 下方按钮 -->
 
     <LinearLayout
@@ -27,14 +36,14 @@
             android:layout_height="wrap_content"
             android:layout_marginBottom="10dp"
             android:gravity="center"
-            android:textColor="#000000" />
+            android:textColor="@color/white" />
 
         <Button
             android:id="@+id/plugin_camera_btnTakePhoto"
-            android:layout_width="50dp"
-            android:layout_height="50dp"
+            android:layout_width="80dp"
+            android:layout_height="80dp"
             android:layout_marginBottom="10dp"
-            android:background="@drawable/plugin_camera_bt_takepic_selector" />
+            android:background="@drawable/plugin_camera_bt_takepic_normal" />
     </LinearLayout>
 
     <!-- 功能按钮（隐藏） -->
