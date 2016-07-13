@@ -6,7 +6,6 @@
     <string name="plugin_camera_complete">完成</string>
     <string name="plugin_camera_location">传入的地理位置</string>
     <string name="plugin_camera_take_photo_again">重拍</string>
-    <string name="plugin_camera_submit">提交</string>
+    <string name="plugin_camera_submit">使用照片</string>
     <string name="plugin_camera_title_activity_second">uexCameraSecondActivity</string>
-
 </resources>

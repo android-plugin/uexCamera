@@ -35,6 +35,7 @@ import android.provider.MediaStore;
 import android.view.Display;
 import android.view.View;
 import android.webkit.URLUtil;
+import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
 
@@ -471,6 +472,16 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 			String filePath = mBrwView.getWidgetPath() + "uexViewCameraPhotos";
 			MLog.getIns().i("filePath = " + filePath);
 			mCameraView.setFilePath(filePath);
+			Button cancelBtn= (Button) view.findViewById(EUExUtil.getResIdID("plugin_camera_bt_cancel"));
+			cancelBtn.setOnClickListener(new View.OnClickListener() {
+				@Override
+				public void onClick(View v) {
+                    if (null != view) {
+                        removeViewFromCurrentWindow(view);
+                        view = null;
+                    }
+				}
+			});
 			mCameraView.setCallbackCameraViewClose(this);// 注册callback，将当前类传入
 			mCameraView.setLabelText(label);// 调用方法写入地址
 			if (quality != -1) {// 如果quality格式正确
