@@ -1,9 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="3.0.21" build="21">
-        <info>21:修复了小内存手机压缩图片时发生OOM的问题
-              21.1:修复inSampleSize不生效的问题</info>
+        uexName="uexCamera" version="3.0.22" build="22">
+        <info>22:UI改善</info>
+        <build>21:修复了小内存手机压缩图片时发生OOM的问题
+              21.1:修复inSampleSize不生效的问题</build>
         <build>20:修复了当open()不压缩时拍照不能保存的问题</build>
         <build>19:优化了EUExCamera代码逻辑，优化了压缩图片算法，增加注释，规范代码
               19.1:(仅Android,且暂未开放)在open方法和openInternal方法中增加JSON字段，可以传入压缩图片目标宽高，自动计算压缩比</build>
