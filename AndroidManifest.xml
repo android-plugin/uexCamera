@@ -1,41 +1,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
-    package="org.zywx.wbpalmstar.widgetone.uexcamera"
-    android:versionCode="1"
-    android:versionName="1.0" >
-
-    <uses-sdk
-        android:minSdkVersion="14"
-        android:targetSdkVersion="15" />
+          xmlns:tools="http://schemas.android.com/tools"
+          package="org.zywx.wbpalmstar.widgetone.uexcamera"
+          android:versionCode="1"
+          android:versionName="1.0">
 
     <application
         android:name="org.zywx.wbpalmstar.widgetone.WidgetOneApplication"
         android:icon="@drawable/camera"
+        tools:replace="android:icon"
         android:label="@string/app_name" >
-        <activity
-            android:name="org.zywx.wbpalmstar.engine.EBrowserActivity"
-            android:alwaysRetainTaskState="true"
-            android:configChanges="keyboardHidden|orientation"
-            android:launchMode="singleTask"
-            android:screenOrientation="portrait"
-            android:theme="@style/browser_main_theme"
-            android:windowSoftInputMode="stateHidden|adjustPan" >
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="appcanscheme"/>
-            </intent-filter>
-        </activity>
-
-        <activity
-            android:name="org.zywx.wbpalmstar.platform.mam.PolicyActivity"
-            android:configChanges="orientation|keyboardHidden|navigation" android:windowSoftInputMode="adjustPan"/>
-        <activity
-            android:name="org.zywx.wbpalmstar.platform.mam.PolicyInfoActivity"
-            android:configChanges="orientation|keyboardHidden|navigation" android:windowSoftInputMode="adjustPan"/>
-        <activity android:name="org.zywx.wbpalmstar.engine.TempActivity"
-            android:launchMode="standard"
-            android:screenOrientation="portrait"/>
         <activity android:name="org.zywx.wbpalmstar.engine.LoadingActivity"
             android:configChanges="keyboardHidden|orientation"
             android:screenOrientation="portrait"
@@ -67,16 +40,6 @@
             android:theme="@android:style/Theme.Holo.Light" >
         </activity>
     </application>
-
-    <uses-permission android:name="android.permission.FLASHLIGHT" />
-    <uses-permission android:name="android.permission.CAMERA" />
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
-    <uses-permission android:name="android.permission.RECORD_AUDIO" />
-    <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
-    <uses-permission android:name="android.permission.CHANGE_NETWORK_STATE" />
-    <uses-permission android:name="android.permission.READ_PHONE_STATE" />
 
     <!-- uexCamera -->
 
