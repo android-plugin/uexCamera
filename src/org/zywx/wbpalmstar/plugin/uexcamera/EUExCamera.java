@@ -32,6 +32,7 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.os.Environment;
 import android.provider.MediaStore;
+import android.text.TextUtils;
 import android.view.Display;
 import android.view.View;
 import android.webkit.URLUtil;
@@ -712,8 +713,11 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 							errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
 
 						} else {
-                            callbackToJs(Integer.parseInt(openFunc), false, photoPath);
-                            jsCallback(FUNC_OPEN_CALLBACK, 0, EUExCallback.F_C_TEXT, photoPath);
+                            if (TextUtils.isEmpty(openFunc)){
+                                jsCallback(FUNC_OPEN_CALLBACK, 0, EUExCallback.F_C_TEXT, photoPath);
+                            }else{
+                                callbackToJs(Integer.parseInt(openFunc), false, photoPath);
+                            }
                         }
 					}
 				} catch (Exception e) {
@@ -756,8 +760,11 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 						if (null == tPath) {
 							errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
 						} else {
-                            callbackToJs(Integer.parseInt(openInternalFunc), false, tPath);
-                            jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, tPath);
+                            if (TextUtils.isEmpty(openInternalFunc)){
+                                jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, tPath);
+                            }else{
+                                callbackToJs(Integer.parseInt(openInternalFunc), false, tPath);
+                            }
                         }
 					}
 				}
@@ -775,9 +782,10 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 				} catch (JSONException e) {
 					e.printStackTrace();
 				}
-                jsCallback(FUNC_OPEN_VIEW_CAMERA_CALLBACK, 0, EUExCallback.F_C_TEXT, jsonResult);
                 if (null != openViewCameraFunc) {
                     callbackToJs(Integer.parseInt(openViewCameraFunc), false, jsonObject);
+                }else{
+                    jsCallback(FUNC_OPEN_VIEW_CAMERA_CALLBACK, 0, EUExCallback.F_C_TEXT, jsonResult);
                 }
 			}
 		} else if (resultCode == Activity.RESULT_CANCELED) {// 如果是取消标志 change by
