@@ -2,7 +2,7 @@
 <uexplugins>
     <plugin
         uexName="uexCamera" version="4.0.1" build="1">
-        <info>1:修复open&openInternal接口兼容3.0回调问题</info>
+        <info>1:修复open和openInternal接口兼容3.0回调问题</info>
         <build>0:4.0插件</build>
     </plugin>
 </uexplugins>
