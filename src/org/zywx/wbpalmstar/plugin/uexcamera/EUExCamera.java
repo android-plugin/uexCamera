@@ -221,8 +221,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 			}
 
             int len = parm.length;
-            if (len > 1) {
-                openFunc = parm[len -1];
+            if (len > 2) {
+                openFunc = parm[2];
 
             }
 
@@ -374,8 +374,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 				}
 			}
             int len = parm.length;
-            if (len > 1) {
-                openInternalFunc = parm[len -1];
+            if (len > 2) {
+                openInternalFunc = parm[2];
 
             }
 			// 发Intent调用自定义相机
