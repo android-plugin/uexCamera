@@ -110,6 +110,8 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 											// FOCUSFAIL：聚焦失败
 	}
 
+	public int options;
+
 	/**
 	 * 照相动作回调用的pictureCallback，在这里可以获得拍照后的图片数据
 	 */
@@ -136,19 +138,24 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 					// 重新生成新的图片
 					fileName = savePhoto(data, quality, degree);
 				}
-
-				// 跳转到第二个Activity，携带着文件路径
-				Intent intent = new Intent(mContext, SecondActivity.class);
-				intent.putExtra("label", tvLabel.getText().toString());
-				intent.putExtra("fileName", fileName);
-				if (mEuExCamera != null) {
-					mEuExCamera.startActivityForResult(intent, 68);
-				} else {
-					Toast.makeText(mContext, "跳转失败！", Toast.LENGTH_SHORT).show();
+				if (options==2||options==3){
+					if (mEuExCamera!=null){
+						mEuExCamera.closeViewAndCallback(fileName);
+					}
+				}else{
+					// 跳转到第二个Activity，携带着文件路径
+					Intent intent = new Intent(mContext, SecondActivity.class);
+					intent.putExtra("label", tvLabel.getText().toString());
+					intent.putExtra("fileName", fileName);
+					if (mEuExCamera != null) {
+						mEuExCamera.startActivityForResult(intent, 68);
+					} else {
+						Toast.makeText(mContext, "跳转失败！", Toast.LENGTH_SHORT).show();
+					}
+					isCameraTakingPhoto = false;// camera活干完了，可以继续按了
+					camera.startPreview();// 重新预览
 				}
-				isCameraTakingPhoto = false;// camera活干完了，可以继续按了
 			}
-			camera.startPreview();// 重新预览
 		}
 	};
 

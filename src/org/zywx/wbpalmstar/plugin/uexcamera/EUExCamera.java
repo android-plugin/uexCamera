@@ -6,9 +6,12 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+
+import android.text.TextUtils;
 import org.json.JSONException;
 import org.json.JSONObject;
 import org.zywx.wbpalmstar.base.BUtility;
+import org.zywx.wbpalmstar.engine.DataHelper;
 import org.zywx.wbpalmstar.engine.EBrowserView;
 import org.zywx.wbpalmstar.engine.universalex.EUExBase;
 import org.zywx.wbpalmstar.engine.universalex.EUExCallback;
@@ -39,6 +42,7 @@ import android.webkit.URLUtil;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.Toast;
+import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenViewCameraVO;
 
 public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
@@ -398,51 +402,57 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 		}
 	}
 
+	boolean isJson(String str){
+		if (TextUtils.isEmpty(str)){
+			return false;
+		}
+		return str.startsWith("{") && str.endsWith("}")||
+				str.startsWith("[") && str.endsWith("]");
+	}
+
 	/**
 	 * 打开自定义View相机
 	 *
 	 * @param parm
 	 */
 	public void openViewCamera(String[] parm) {
-		// Toast.makeText(mContext, "openViewCamera",
-		// Toast.LENGTH_SHORT).show();
-		if (parm.length < 6) {
-			return;
-		}
-		String inX = parm[0];
-		String inY = parm[1];
-		String inW = parm[2];
-		String inH = parm[3];
-		label = parm[4];
-		// 新字段 图片质量
-		int quality = -1;// 初始化为-1
-		try {
-			quality = Integer.valueOf(parm[5]);
-			// 对quality进行容错处理
-			if (quality < 0) {
-				quality = 0;
-			} else if (quality > 100) {
-				quality = 100;
+		int len = parm.length;
+		OpenViewCameraVO openVO;
+		if (isJson(parm[0])){
+			openVO= DataHelper.gson.fromJson(parm[0],OpenViewCameraVO.class);
+			if (len>1){
+				openViewCameraFunc=parm[1];
 			}
-		} catch (NumberFormatException e) {
-			e.printStackTrace();
+		}else{
+			openVO=new OpenViewCameraVO();
+			openVO.x=Integer.valueOf(parm[0]);
+			openVO.y=Integer.valueOf(parm[1]);
+			openVO.width=Integer.valueOf(parm[2]);
+			openVO.height=Integer.valueOf(parm[3]);
+			if (len>4){
+				openVO.hint=parm[4];
+			}
+			if (len>5){
+				int quality = -1;// 初始化为-1
+				try {
+					quality = Integer.valueOf(parm[5]);
+					// 对quality进行容错处理
+					if (quality < 0) {
+						quality = 0;
+					} else if (quality > 100) {
+						quality = 100;
+					}
+				} catch (NumberFormatException e) {
+					e.printStackTrace();
+				}
+				openVO.quality=quality;
+			}
+			if (len > 6) {
+				openViewCameraFunc = parm[6];
+			}
 		}
-		MLog.getIns().i("label = " + label);
-		MLog.getIns().i("quality = " + quality);
+		label = openVO.hint;
 
-		int x = 0;
-		int y = 0;
-		int w = 0;
-		int h = 0;
-		try {
-			x = Integer.parseInt(inX);
-			y = Integer.parseInt(inY);
-			w = Integer.parseInt(inW);
-			h = Integer.parseInt(inH);
-		} catch (Exception e) {
-			e.printStackTrace();
-			return;
-		}
 		// 2016/1/19 增加超出分辨率判断
 		/** 获得屏幕分辨率 **/
 		Display display = ((Activity) mContext).getWindowManager().getDefaultDisplay();
@@ -451,11 +461,11 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 		int screenWidth = size.x;
 		int screenHeight = size.y;
 
-		if ((x + w) > screenWidth) {// 如果宽度超出屏幕宽度
-			w = screenWidth - x;// 限制最大为屏幕宽度
+		if ((openVO.x + openVO.width) > screenWidth) {// 如果宽度超出屏幕宽度
+			openVO.width = screenWidth - openVO.x;// 限制最大为屏幕宽度
 		}
-		if ((y + h) > screenHeight) {// 如果高度超出屏幕高度
-			h = screenHeight - y;// 限制最大为屏幕高度
+		if ((openVO.y + openVO.height) > screenHeight) {// 如果高度超出屏幕高度
+			openVO.height = screenHeight - openVO.y;// 限制最大为屏幕高度
 		}
 
 		if (null == view) {
@@ -485,17 +495,15 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 			});
 			mCameraView.setCallbackCameraViewClose(this);// 注册callback，将当前类传入
 			mCameraView.setLabelText(label);// 调用方法写入地址
-			if (quality != -1) {// 如果quality格式正确
-				mCameraView.setQuality(quality);
+            mCameraView.options=openVO.options;
+			if (openVO.quality != -1) {// 如果quality格式正确
+				mCameraView.setQuality(openVO.quality);
 			}
-			RelativeLayout.LayoutParams lparm = new RelativeLayout.LayoutParams(w, h);
-			lparm.leftMargin = x;
-			lparm.topMargin = y;
+			RelativeLayout.LayoutParams lparm = new RelativeLayout.LayoutParams(openVO.width, openVO.height);
+			lparm.leftMargin = openVO.x;
+			lparm.topMargin = openVO.y;
 			addViewToCurrentWindow(mCameraView, lparm);
-            int len = parm.length;
-            if (len == 7) {
-                openViewCameraFunc = parm[len -1];
-            }
+
 		}
 	}
 
@@ -770,23 +778,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 				}
 			} else if (requestCode == 68) {
 				MLog.getIns().i("requestCode = " + requestCode);
-				removeViewCameraFromWindow(null);// 移除自定义View相机
 				String photoPath = data.getStringExtra("photoPath");
-				String jsonResult = "";
-				JSONObject jsonObject = new JSONObject();
-				try {
-					jsonObject.put("photoPath", photoPath);
-					jsonObject.put("location", label);
-					jsonObject.put("label", label);
-					jsonResult = jsonObject.toString();
-				} catch (JSONException e) {
-					e.printStackTrace();
-				}
-                if (null != openViewCameraFunc) {
-                    callbackToJs(Integer.parseInt(openViewCameraFunc), false, jsonObject);
-                }else{
-                    jsCallback(FUNC_OPEN_VIEW_CAMERA_CALLBACK, 0, EUExCallback.F_C_TEXT, jsonResult);
-                }
+				closeViewAndCallback(photoPath);
 			}
 		} else if (resultCode == Activity.RESULT_CANCELED) {// 如果是取消标志 change by
 															// waka 2016-01-28
@@ -795,6 +788,27 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 			}
 		}
 	}
+
+
+	public void closeViewAndCallback(String photoPath){
+        removeViewCameraFromWindow(null);// 移除自定义View相机
+        String jsonResult = "";
+        JSONObject jsonObject = new JSONObject();
+        try {
+            jsonObject.put("photoPath", photoPath);
+            jsonObject.put("location", label);
+            jsonObject.put("label", label);
+            jsonResult = jsonObject.toString();
+        } catch (JSONException e) {
+            e.printStackTrace();
+        }
+        jsCallback(FUNC_OPEN_VIEW_CAMERA_CALLBACK, 0, EUExCallback.F_C_TEXT, jsonResult);
+        if (null != openViewCameraFunc) {
+            callbackToJs(Integer.parseInt(openViewCameraFunc), false, jsonObject);
+        }else{
+            jsCallback(FUNC_OPEN_VIEW_CAMERA_CALLBACK, 0, EUExCallback.F_C_TEXT, jsonResult);
+        }
+    }
 
 	/**
 	 * 压缩拍照生成的图片
