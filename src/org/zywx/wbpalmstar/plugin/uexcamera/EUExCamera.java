@@ -484,6 +484,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 			MLog.getIns().i("filePath = " + filePath);
 			mCameraView.setFilePath(filePath);
 			Button cancelBtn= (Button) view.findViewById(EUExUtil.getResIdID("plugin_camera_bt_cancel"));
+			cancelBtn.setVisibility(View.INVISIBLE);
 			cancelBtn.setOnClickListener(new View.OnClickListener() {
 				@Override
 				public void onClick(View v) {

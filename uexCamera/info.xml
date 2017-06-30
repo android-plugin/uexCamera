@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="4.0.2" build="2">
-        <info>2:支持拍照不显示预览</info>
+        uexName="uexCamera" version="4.0.3" build="3">
+        <info>3:隐藏取消按钮</info>
+        <build>2:支持拍照不显示预览</build>
         <build>1:修复open和openInternal接口兼容3.0回调问题</build>
         <build>0:4.0插件</build>
     </plugin>
