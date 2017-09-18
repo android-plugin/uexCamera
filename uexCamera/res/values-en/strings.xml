@@ -8,4 +8,5 @@
     <string name="plugin_camera_submit">Submit</string>
     <string name="plugin_camera_title_activity_second">uexCameraSecondActivity</string>
     <string name="plugin_camera_permission_denied">Place check you camera permission</string>
+    <string name="plugin_camera_low_memory_tips">There is not enough memory to open the camera</string>
 </resources>

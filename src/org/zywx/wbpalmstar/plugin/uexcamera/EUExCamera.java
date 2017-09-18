@@ -960,7 +960,6 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 	}
 
 	private void callbackCameraPermissionDenied(){
-		//{"errCode":"1","info":""}
 		String errorData = "{\"errCode\":\"1\",\"info\":\"" + EUExUtil.getString("plugin_camera_permission_denied") + "\"}";
 		jsCallbackJsonObject(FUNC_ON_PERMISSION_DENIED,errorData);
 	}
