@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- uexCamera -->
+    <string name="plugin_camera_cancel">Cancel</string>
+    <string name="plugin_camera_complete">Complete</string>
+    <string name="plugin_camera_location">Location</string>
+    <string name="plugin_camera_take_photo_again">Again</string>
+    <string name="plugin_camera_submit">Submit</string>
+    <string name="plugin_camera_title_activity_second">uexCameraSecondActivity</string>
+    <string name="plugin_camera_permission_denied">Place check you camera permission</string>
+    <string name="plugin_camera_low_memory_tips">There is not enough memory to open the camera</string>
+</resources>
