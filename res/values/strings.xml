@@ -4,10 +4,7 @@
     <!-- common use通用字符串 -->
     <string name="app_name">uexCamera</string>
 
-    <!-- uexCamera -->
     <!-- EUExCamera -->
-    <string name="plugin_camera_low_memory_tips">内存不足,无法打开相机</string>
-
     <!-- CameraView -->
     <string name="plugin_camera_cancel">取消</string>
     <string name="plugin_camera_complete">完成</string>
@@ -15,5 +12,6 @@
     <string name="plugin_camera_take_photo_again">重拍</string>
     <string name="plugin_camera_submit">使用照片</string>
     <string name="plugin_camera_title_activity_second">uexCameraSecondActivity</string>
-
+    <string name="plugin_camera_permission_denied">相机打开失败,请检查相机权限是否开启</string>
+    <string name="plugin_camera_low_memory_tips">内存不足,无法打开相机</string>
 </resources>
