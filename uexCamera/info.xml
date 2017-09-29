@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="4.0.3" build="3">
-        <info>3:隐藏取消按钮</info>
+        uexName="uexCamera" version="4.0.4" build="4">
+        <info>4:添加相机权限被拒回调,添加英文环境资源包,修复string.xml缺少的问题</info>
+        <build>3:隐藏取消按钮</build>
         <build>2:支持拍照不显示预览</build>
         <build>1:修复open和openInternal接口兼容3.0回调问题</build>
         <build>0:4.0插件</build>
