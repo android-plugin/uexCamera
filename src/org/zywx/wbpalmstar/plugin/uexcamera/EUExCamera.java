@@ -19,6 +19,7 @@ import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.FileUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.MemoryUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.MLog;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.PermissionUtil;
 
 import android.app.Activity;
 import android.content.Context;
@@ -49,6 +50,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 	private static final String FUNC_OPEN_VIEW_CAMERA_CALLBACK = "uexCamera.cbOpenViewCamera";// 打开自定义相机View回调
 	private static final String FUNC_CHANGE_FLASHMODE_CALLBACK = "uexCamera.cbChangeFlashMode";// 改变闪关灯模式的回调
 	private static final String FUNC_CHANGE_CAMERA_POSITION_CALLBACK = "uexCamera.cbChangeCameraPosition";// 改变摄像头位置的回调
+	private static final String FUNC_ON_PERMISSION_DENIED = "uexCamera.onPermissionDenied";//权限呗拒绝监听
 
 	private File mTempPath;// 临时文件路径
 
@@ -100,7 +102,10 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 	 *            													}
 	 */
 	public void open(String[] parm) {
-
+		if(!PermissionUtil.checkCameraPermission()){
+			callbackCameraPermissionDenied();
+			return;
+		}
 		// @formatter:on
 		// 初始化压缩相关成员变量
 		initCompressFields();
@@ -222,7 +227,6 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 			cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri);// 设置系统相机拍摄照片完成后图片文件的存放地址
 			cameraIntent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);// 设置IntentFlag,singleTask
 			startActivityForResult(cameraIntent, Constant.REQUEST_CODE_SYSTEM_CAMERA);
-
 		}
 
 		// 如果SD卡不可用
@@ -249,7 +253,10 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 	 *            													}
 	 */
 	public void openInternal(String[] parm) {
-
+		if(!PermissionUtil.checkCameraPermission()){
+			callbackCameraPermissionDenied();
+			return;
+		}
 		// @formatter:on
 		// 初始化压缩相关成员变量
 		initCompressFields();
@@ -390,6 +397,10 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 	 * @param parm
 	 */
 	public void openViewCamera(String[] parm) {
+		if(!PermissionUtil.checkCameraPermission()){
+			callbackCameraPermissionDenied();
+			return;
+		}
 		// Toast.makeText(mContext, "openViewCamera",
 		// Toast.LENGTH_SHORT).show();
 		if (parm.length < 6) {
@@ -769,8 +780,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 	 * 
 	 * 因为都是压缩标志位true时调用该方法，所以不再判断是否压缩，一律直接压缩
 	 * 
-	 * @param tempPath_图片临时存放路径
-	 * @param degree_图片方向
+	 * @param tempPath 图片临时存放路径
+	 * @param degree 图片方向
 	 * @return
 	 */
 	private String makePictrue(File tempPath, int degree) {
@@ -946,5 +957,22 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 			removeViewFromCurrentWindow(view);
 			view = null;
 		}
+	}
+
+	private void callbackCameraPermissionDenied(){
+		String errorData = "{\"errCode\":\"1\",\"info\":\"" + EUExUtil.getString("plugin_camera_permission_denied") + "\"}";
+		jsCallbackJsonObject(FUNC_ON_PERMISSION_DENIED,errorData);
+	}
+
+	/**
+	 * javaScript json object callback
+	 *
+	 * @param jsCallbackName callback name
+	 * @param data callback data
+	 */
+	private void jsCallbackJsonObject(String jsCallbackName, String data) {
+		String js = SCRIPT_HEADER + "if(" + jsCallbackName + "){"
+				+ jsCallbackName + "(" + data + ");}";
+		onCallback(js);
 	}
 }

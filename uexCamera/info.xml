@@ -1,8 +1,10 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="3.0.22" build="22">
-        <info>22:UI改善</info>
+        uexName="uexCamera" version="3.0.23" build="23">
+        <info>23:修复string.xml缺少plugin_camera_low_memory_tips的问题</info>
+        <build>22.1:添加相机权限被拒回调,添加英文环境资源包</build>
+        <build>22:UI改善</build>
         <build>21:修复了小内存手机压缩图片时发生OOM的问题
               21.1:修复inSampleSize不生效的问题</build>
         <build>20:修复了当open()不压缩时拍照不能保存的问题</build>

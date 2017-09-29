@@ -56,6 +56,9 @@ var cInt = 2;
 		uexCamera.cbOpenViewCamera = cbOpenViewCamera;
 		uexCamera.cbChangeFlashMode = cbChangeFlashMode;
 		uexCamera.cbChangeCameraPosition = cbChangeCameraPosition;
+		uexCamera.onPermissionDenied = function(data){
+			alert("onPermissionDenied : " + JSON.stringify(data));
+		}
 		uexWidgetOne.cbError = function(opCode, errorCode, errorInfo){
 			alert("errorCode:" + errorCode + "\nerrorInfo:" + errorInfo);
 		}
