@@ -1,8 +1,10 @@
 <?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="4.3.5" build="4">
-        <info>5:引擎升级，动态申请相机权限</info>
+        uexName="uexCamera" version="4.3.9" build="4">
+        <info>8:修改自定义相机的取消配置</info>
+        <build>8:修改openViewCamera接口增加打开摄像头位置参数</build>
+        <build>5:引擎升级，动态申请相机权限</build>
         <build>4:添加相机权限被拒回调,添加英文环境资源包,修复string.xml缺少的问题</build>
         <build>3:隐藏取消按钮</build>
         <build>2:支持拍照不显示预览</build>

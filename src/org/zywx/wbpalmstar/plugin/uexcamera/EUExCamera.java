@@ -473,6 +473,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
      * @param parm
      */
     public void openViewCamera(String[] parm) {
+        paramCustom2=parm;
         requsetPerssions(Manifest.permission.CAMERA, "应用需要相机权限，请打开相应的权限!", REQUSTCAMERACODECUSTOMAGIN);
     }
 
@@ -511,6 +512,10 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
             if (len > 6) {
                 openViewCameraFunc = parm[6];
             }
+            if(len>7) {
+                openVO.postion=Integer.valueOf(parm[7]);
+                CameraView.cameraPosition=Integer.valueOf(parm[7]);
+            }
         }
         label = openVO.hint;
 
@@ -537,7 +542,9 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
             // Toast.makeText(mContext, "找不到名为:my_uex_test_view的layout文件!",
             // Toast.LENGTH_LONG).show();
             // return;
+
             // }
+
             view = View.inflate(mContext, EUExUtil.getResLayoutID("plugin_camera_view_camera"), null);// 用view引入布局文件
             mCameraView = (CameraView) view;// 将View强转为CameraView，获得CameraView的实例
             mCameraView.setmEuExCamera(this);// 设置EUExCamera的实例
@@ -545,7 +552,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
             MLog.getIns().i("filePath = " + filePath);
             mCameraView.setFilePath(filePath);
             Button cancelBtn = (Button) view.findViewById(EUExUtil.getResIdID("plugin_camera_bt_cancel"));
-            cancelBtn.setVisibility(View.INVISIBLE);
+            cancelBtn.setVisibility(View.VISIBLE);
             cancelBtn.setOnClickListener(new View.OnClickListener() {
                 @Override
                 public void onClick(View v) {
@@ -565,7 +572,9 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
             lparm.leftMargin = openVO.x;
             lparm.topMargin = openVO.y;
             addViewToCurrentWindow(mCameraView, lparm);
-
+//            CameraView.cameraPosition = 0;
+//            mCameraView.overturnCamera();
+//            changeCameraPosition(new String[]{"1"});
         }
     }
 

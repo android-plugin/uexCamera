@@ -14,4 +14,5 @@ public class OpenViewCameraVO implements Serializable {
     public String hint;
     public int    quality;
     public int    options;
+    public int    postion; ///摄像头的位置
 }
