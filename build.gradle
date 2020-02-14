@@ -1,9 +1,10 @@
 buildscript {
     repositories {
         jcenter()
+        google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:2.1.2'
+        classpath 'com.android.tools.build:gradle:3.0.1'
 
         // NOTE: Do not place your application dependencies here; they belong
         // in the individual module build.gradle files
@@ -16,20 +17,22 @@ repositories {
     flatDir {
         dirs 'libs'
     }
+    google()
     maven {
         url 'https://raw.githubusercontent.com/android-plugin/mvn-repo/master/'
     }
 }
 
 dependencies {
-    compile fileTree(dir: 'libs', include: '*.jar')
+    implementation fileTree(dir: 'libs', include: '*.jar')
     //compile(name: 'Engine-system-release-4.0.0', ext: 'aar')//依赖本地引擎
-    compile 'org.appcan:engine:+:systemRelease@aar'//依赖远程引擎
+//    compile 'org.appcan:engine:+:systemRelease@aar'//依赖远程引擎
+    implementation ('org.appcan:engine:4.4.27')
 }
 
 android {
-    compileSdkVersion 22
-    buildToolsVersion '23.0.2'
+    compileSdkVersion 28
+//    buildToolsVersion '23.0.2'
     lintOptions {
         abortOnError false
     }
@@ -49,28 +52,15 @@ android {
             jniLibs.srcDirs = ['libs']
         }
 
-        // Move the tests to tests/java, tests/res, etc...
-        instrumentTest.setRoot('tests')
-
-        // Move the build types to build-types/<type>
-        // For instance, build-types/debug/java, build-types/debug/AndroidManifest.xml, ...
-        // This moves them out of them default location under src/<type>/... which would
-        // conflict with src/ being used by the main source set.
-        // Adding new build types or product flavors should be accompanied
-        // by a similar customization.
-        debug.setRoot('build-types/debug')
-        release.setRoot('build-types/release')
-
-        defaultConfig {
-            minSdkVersion 14
-        }
     }
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_6
         targetCompatibility JavaVersion.VERSION_1_6
     }
     defaultConfig {
-        applicationId 'org.zywx.wbpalmstar.widgetone.uexcamera'
+        minSdkVersion 18
+        targetSdkVersion 28
+        applicationId "org.zywx.wbpalmstar.widgetone.uexcamera"
         multiDexEnabled true
     }
     productFlavors {
