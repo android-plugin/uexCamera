@@ -1,36 +1,20 @@
 package org.zywx.wbpalmstar.plugin.uexcamera.ViewCamera;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Date;
-import java.util.List;
-import java.util.Locale;
-
-import org.zywx.wbpalmstar.engine.universalex.EUExUtil;
-import org.zywx.wbpalmstar.plugin.uexcamera.EUExCamera;
-import org.zywx.wbpalmstar.plugin.uexcamera.LogUtils;
-import org.zywx.wbpalmstar.plugin.uexcamera.Util;
-import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
-
 import android.annotation.SuppressLint;
+import android.app.Activity;
 import android.content.Context;
 import android.content.Intent;
 import android.graphics.Bitmap;
+import android.graphics.Bitmap.Config;
 import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
-import android.graphics.Point;
 import android.graphics.Paint.Align;
+import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.Typeface;
-import android.graphics.Bitmap.Config;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.CameraInfo;
@@ -43,18 +27,36 @@ import android.os.Handler;
 import android.text.TextUtils;
 import android.util.AttributeSet;
 import android.util.Log;
-import android.view.View;
-import android.view.WindowManager;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
 import android.view.OrientationEventListener;
+import android.view.Surface;
 import android.view.SurfaceHolder;
 import android.view.SurfaceHolder.Callback;
 import android.view.SurfaceView;
+import android.view.View;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.RelativeLayout;
 import android.widget.TextView;
 import android.widget.Toast;
+
+import org.zywx.wbpalmstar.engine.universalex.EUExUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.EUExCamera;
+import org.zywx.wbpalmstar.plugin.uexcamera.LogUtils;
+import org.zywx.wbpalmstar.plugin.uexcamera.Util;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
+
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.lang.reflect.Method;
+import java.text.SimpleDateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
 
 /**
  * 自定义View照相机
@@ -75,7 +77,7 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 	// View
 	private SurfaceView mSurfaceView;// 预览的SurfaceView
 	private SurfaceHolder mSurfaceHolder;
-	private Button btnTakePhoto, btnClose, btnDrawLine, btnOverturnCamera, btnFlash;// 各种按钮
+	private Button btnTakePhoto, btnClose, btnDrawLine, btnOverturnCamera, btnFlash,plugin_camera_bt_cancel;// 各种按钮
 	private TextView tvLabel;// 位置文本
 	private View viewFocus;// 聚焦视图View
 
@@ -197,6 +199,7 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 		btnOverturnCamera = (Button) findViewById(EUExUtil.getResIdID("plugin_camera_btnOverturnCamera"));
 		btnFlash = (Button) findViewById(EUExUtil.getResIdID("plugin_camera_btnFlash"));
 		viewFocus = (View) findViewById(EUExUtil.getResIdID("plugin_camera_view_focus"));
+        plugin_camera_bt_cancel=(Button) findViewById(EUExUtil.getResIdID("plugin_camera_bt_cancel"));
 	}
 
 	/**
@@ -246,6 +249,7 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 		mSurfaceHolder.addCallback(this);// 实现surfaceView回调
 		btnTakePhoto.setOnClickListener(this);
 		btnClose.setOnClickListener(this);
+		plugin_camera_bt_cancel.setOnClickListener(this);
 		btnDrawLine.setOnClickListener(this);
 		btnOverturnCamera.setOnClickListener(this);
 		btnFlash.setOnClickListener(this);
@@ -339,13 +343,15 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 			// } else {
 			// camera.setDisplayOrientation(90);
 			// }
+			int result = getResultDegrees();
 			if (Build.VERSION.SDK_INT >= 8) {
 				// MZ 180， other 90...
-				if ("M9".equalsIgnoreCase(mod) || "MX".equalsIgnoreCase(mod)) {
-					setDisplayOrientation(mCamera, 180);
-				} else {
-					setDisplayOrientation(mCamera, 90);
-				}
+//				if ("M9".equalsIgnoreCase(mod) || "MX".equalsIgnoreCase(mod)||"LON-AL00".equalsIgnoreCase(mod)) {
+//					setDisplayOrientation(mCamera, 180);
+//				} else {
+//					setDisplayOrientation(mCamera, 90);
+//				}
+                setDisplayOrientation(mCamera, result);
 			} else {
 				parameters.set("orientation", "portrait");
 				parameters.set("rotation", 90);
@@ -363,6 +369,35 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 			mCamera = null;
 			e.printStackTrace();
 		}
+	}
+
+	private int getResultDegrees() {
+		int rotation = ((Activity)mContext).getWindowManager().getDefaultDisplay()
+				.getRotation();
+		int degrees = 0;
+		switch (rotation) {
+			case Surface.ROTATION_0:
+				degrees = 0;
+				break;
+			case Surface.ROTATION_90:
+				degrees = 90;
+				break;
+			case Surface.ROTATION_180:
+				degrees = 180;
+				break;
+			case Surface.ROTATION_270:
+				degrees = 270;
+				break;
+		}
+
+		int result;
+		if (cameraInfo.facing == CameraInfo.CAMERA_FACING_FRONT) {
+			result = (cameraInfo.orientation + degrees) % 360;
+			result = (360 - result) % 360;
+		} else {
+			result = (cameraInfo.orientation - degrees + 360) % 360;
+		}
+		return result;
 	}
 
 	private void setDisplayOrientation(Camera camera, int angle) {
@@ -548,7 +583,8 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 				// 照相前判定如果是前置摄像头，则将照片位置旋转270度，必须这样做要不会前置摄像头重拍时会图像位置会发生颠倒
 				if (cameraPosition == 1) {
 					Camera.Parameters parameters = mCamera.getParameters();
-					parameters.setRotation(270);
+					Log.e("TAG", "parameters:::::::"+parameters);
+//					parameters.setRotation(90);
 					mCamera.setParameters(parameters);
 				}
 				isCameraTakingPhoto = true;
@@ -909,7 +945,8 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 			textPaint.setTypeface(typeface);
 			textPaint.setTextAlign(Align.CENTER);
 			canvas.drawText(text, width / 2, height - 40, textPaint);
-			canvas.save(Canvas.ALL_SAVE_FLAG);
+//			canvas.save(Canvas.ALL_SAVE_FLAG);
+			canvas.save();
 			canvas.restore();
 			return newBitmap;
 		}

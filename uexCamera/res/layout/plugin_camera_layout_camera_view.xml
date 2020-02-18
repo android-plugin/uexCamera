@@ -11,6 +11,8 @@
         android:layout_height="match_parent" >
     </SurfaceView>
     <Button
+        android:layout_alignParentBottom="true"
+        android:layout_marginLeft="10dp"
         android:id="@+id/plugin_camera_bt_cancel"
         android:background="@color/transparent"
         android:layout_width="wrap_content"
@@ -18,7 +20,9 @@
         android:textColor="@color/white"
         android:textSize="16sp"
         android:text="取消"
+        android:layout_marginBottom="58dp"
         android:padding="20dp"
+
     />
     <!-- 下方按钮 -->
 
