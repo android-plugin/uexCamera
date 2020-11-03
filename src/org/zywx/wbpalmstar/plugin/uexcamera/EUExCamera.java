@@ -314,10 +314,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
      * @formatter:off
      */
     public void openInternal(String[] parm) {
-        requsetPerssions(Manifest.permission.CAMERA, "应用需要相机权限，请打开相应的权限!", REQUSTCAMERACODECUSTOM);
         paramCustom = parm;
-
-
+        requsetPerssions(Manifest.permission.CAMERA, "应用需要相机权限，请打开相应的权限!", REQUSTCAMERACODECUSTOM);
     }
 
     private void openCustomCamera(String[] parm) {
