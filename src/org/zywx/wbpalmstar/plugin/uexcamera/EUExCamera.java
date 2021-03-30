@@ -12,10 +12,10 @@ import android.graphics.Point;
 import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Bundle;
-import android.os.Environment;
 import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
+import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
 import android.view.Display;
 import android.view.View;
@@ -61,7 +61,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
     private static final int REQUSTCAMERACODENOMAL = 1;
     private static final int REQUSTCAMERACODECUSTOM = 2;
-    private static final int REQUSTCAMERACODECUSTOMAGIN = 3;
+    private static final int REQUSTCAMERACODECUSTOM_VIEW_MODE = 3;
     private String[] paramNomal;
     private String[] paramCustom;
     private String[] paramCustom2;
@@ -121,6 +121,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                     openNomalCamera(paramNomal);
                 } else {
                     Toast.makeText(mContext, "为了不影响功能的正常使用,请打开相关权限!", Toast.LENGTH_LONG).show();
+                    callbackCameraPermissionDenied();
                 }
                 break;
 
@@ -130,14 +131,16 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
                 } else {
                     Toast.makeText(mContext, "为了不影响功能的正常使用,请打开相关权限!", Toast.LENGTH_LONG).show();
+                    callbackCameraPermissionDenied();
                 }
                 break;
 
-            case REQUSTCAMERACODECUSTOMAGIN:
+            case REQUSTCAMERACODECUSTOM_VIEW_MODE:
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
                     openCustomCamera2(paramCustom2);
                 } else {
                     Toast.makeText(mContext, "为了不影响功能的正常使用,请打开相关权限!", Toast.LENGTH_LONG).show();
+                    callbackCameraPermissionDenied();
                 }
                 break;
         }
@@ -156,10 +159,12 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
      * @formatter:off
      */
     public void open(String[] parm) {
-
         paramNomal = parm;
-        requsetPerssions(Manifest.permission.CAMERA, "应用需要相机权限，请打开相应的权限!", REQUSTCAMERACODENOMAL);
-
+        if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED){
+            openNomalCamera(paramNomal);
+        }else{
+            requsetPerssionsMore(new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, EUExUtil.getString("plugin_camera_permission_request_hint"), REQUSTCAMERACODENOMAL);
+        }
     }
 
     private void openNomalCamera(String[] parm) {
@@ -255,12 +260,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
             // 如果不压缩
             if (!mIsCompress) {
-
-                // 直接已最终目录作为文件名
-                String folderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/widgetone/apps/" + mBrwView.getRootWidget().m_appId + "/photo";// 获得文件夹路径
-                FileUtil.checkFolderPath(folderPath);// 如果不存在，则创建所有的父文件夹
-                String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/widgetone/apps/" + mBrwView.getRootWidget().m_appId + "/" + getName();// 获得新的存放目录
-                mTempPath = new File(path);
+                String outputFilePath = generateOutputPhotoFilePath();
+                mTempPath = new File(outputFilePath);
             } else {
 
                 // 使用临时文件名存储文件
@@ -289,6 +290,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
             cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri);// 设置系统相机拍摄照片完成后图片文件的存放地址
             cameraIntent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);// 设置IntentFlag,singleTask
             startActivityForResult(cameraIntent, Constant.REQUEST_CODE_SYSTEM_CAMERA);
+            MLog.getIns().i("相机启动请求已经发送");
         }
 
         // 如果SD卡不可用
@@ -315,7 +317,11 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
      */
     public void openInternal(String[] parm) {
         paramCustom = parm;
-        requsetPerssions(Manifest.permission.CAMERA, "应用需要相机权限，请打开相应的权限!", REQUSTCAMERACODECUSTOM);
+        if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED){
+            openCustomCamera(paramNomal);
+        }else{
+            requsetPerssionsMore(new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, EUExUtil.getString("plugin_camera_permission_request_hint"), REQUSTCAMERACODECUSTOM);
+        }
     }
 
     private void openCustomCamera(String[] parm) {
@@ -411,12 +417,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
             // 如果不压缩
             if (!mIsCompress) {
-
-                // 直接已最终目录作为文件名
-                String folderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/widgetone/apps/" + mBrwView.getRootWidget().m_appId + "/photo";// 获得文件夹路径
-                FileUtil.checkFolderPath(folderPath);// 如果不存在，则创建所有的父文件夹
-                String path = Environment.getExternalStorageDirectory().getAbsolutePath() + "/widgetone/apps/" + mBrwView.getRootWidget().m_appId + "/" + getName();// 获得新的存放目录
-                mTempPath = new File(path);
+                String outputPath = generateOutputPhotoFilePath();// 获得新的存放目录
+                mTempPath = new File(outputPath);
             } else {
 
                 // 使用临时文件名存储文件
@@ -471,8 +473,12 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
      * @param parm
      */
     public void openViewCamera(String[] parm) {
-        paramCustom2=parm;
-        requsetPerssions(Manifest.permission.CAMERA, "应用需要相机权限，请打开相应的权限!", REQUSTCAMERACODECUSTOMAGIN);
+        paramCustom2 = parm;
+        if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED){
+            openCustomCamera2(paramNomal);
+        }else{
+            requsetPerssionsMore(new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, EUExUtil.getString("plugin_camera_permission_request_hint"), REQUSTCAMERACODECUSTOM_VIEW_MODE);
+        }
     }
 
     private void openCustomCamera2(String[] parm) {
@@ -778,15 +784,20 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                     if (!mIsCompress && 0 == degree) {
 
                         // 直接回调最终地址
-                        jsCallback(FUNC_OPEN_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
+                        if (TextUtils.isEmpty(openFunc)) {
+                            jsCallback(FUNC_OPEN_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
+                        } else {
+                            callbackToJs(Integer.parseInt(openFunc), false, finalPath);
+                        }
                     }
 
                     // 否则，压缩拍照生成的图片
                     else {
-                        String photoPath = makePictrue(new File(finalPath), degree);
+                        String photoPath = makePicture(new File(finalPath), degree);
                         if (null == photoPath) {
 
                             MLog.getIns().e("null == photoPath");
+                            // TODO 未使用uexCamera的回调
                             errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
 
                         } else {
@@ -798,12 +809,11 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                         }
                     }
                 } catch (Exception e) {
-                    e.printStackTrace();
                     MLog.getIns().e(e);
                     errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
                     return;
                 }
-            } else if (requestCode == 67) {
+            } else if (requestCode == Constant.REQUEST_CODE_INTERNAL_CAMERA) {
                 if (null != data)
                     ;
                 finalPath = mTempPath.getAbsolutePath();
@@ -831,9 +841,13 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                         }
                     }
                     if (!mIsCompress && 0 == degree) {
-                        jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
+                        if (TextUtils.isEmpty(openInternalFunc)) {
+                            jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
+                        } else {
+                            callbackToJs(Integer.parseInt(openInternalFunc), false, finalPath);
+                        }
                     } else {
-                        String tPath = makePictrue(new File(finalPath), degree);
+                        String tPath = makePicture(new File(finalPath), degree);
                         if (null == tPath) {
                             errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
                         } else {
@@ -854,6 +868,20 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
             // waka 2016-01-28
             if (requestCode == 68) {// 如果是SecondActivity传回来的取消标记
                 mCameraView.setCameraTakingPhoto(false);// 设置正在照相标记为false
+            }else if (requestCode == Constant.REQUEST_CODE_SYSTEM_CAMERA){
+                // 打开系统相机后取消操作
+                if (TextUtils.isEmpty(openFunc)) {
+                    jsCallback(FUNC_OPEN_CALLBACK, 0, EUExCallback.F_C_TEXT, "");
+                } else {
+                    callbackToJs(Integer.parseInt(openFunc), false, "");
+                }
+            }else if (requestCode == Constant.REQUEST_CODE_INTERNAL_CAMERA){
+                // 打开自定义相机后取消操作
+                if (TextUtils.isEmpty(openInternalFunc)) {
+                    jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, "");
+                } else {
+                    callbackToJs(Integer.parseInt(openInternalFunc), false, "");
+                }
             }
         }
     }
@@ -888,7 +916,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
      * @param degree   图片方向
      * @return
      */
-    private String makePictrue(File tempPath, int degree) {
+    private String makePicture(File tempPath, int degree) {
 
         // 之前的路径，因为有bug，所以作废
         // String newPath = BUtility.makeRealPath("wgt://" + getName(),
@@ -898,12 +926,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
         MLog.getIns().i("图片临时存放路径tempPath = " + tempPath);
         MLog.getIns().i("图片方向degree = " + degree);
 
-		/*
-         * 获得新的存放目录
-		 */
-        String folderPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/widgetone/apps/" + mBrwView.getRootWidget().m_appId + "/photo";// 获得文件夹路径
-        FileUtil.checkFolderPath(folderPath);// 如果不存在，则创建所有的父文件夹
-        String newPath = Environment.getExternalStorageDirectory().getAbsolutePath() + "/widgetone/apps/" + mBrwView.getRootWidget().m_appId + "/" + getName();// 获得新的存放目录
+        String newPath = generateOutputPhotoFilePath();
         MLog.getIns().i("newPath = " + newPath);
 
 		/*
@@ -1002,7 +1025,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
             mInSampleSize = mInSampleSize * 2;// 压缩比增加
             MLog.getIns().i("mInSampleSize = " + mInSampleSize);
-            return makePictrue(tempPath, degree);// 继续压缩
+            return makePicture(tempPath, degree);// 继续压缩
 
         } catch (FileNotFoundException e) {
 
@@ -1033,15 +1056,17 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
     }
 
     /**
-     * 得到文件名
+     * 生成照片输出目录的文件路径
      *
-     * @return
      */
-    private String getName() {
-
-        String fileName = FileUtil.getSimpleDateFormatFileName("photo/scan", ".jpg");
-
-        return fileName;
+    private String generateOutputPhotoFilePath() {
+        // 直接已最终目录作为文件名
+        String folderPath = BUtility.getWidgetOneRootPath() + "/apps/" + mBrwView.getRootWidget().m_appId + "/photo";// 获得文件夹路径
+        FileUtil.checkFolderPath(folderPath);// 如果不存在，则创建所有的父文件夹
+        // 生成带时间戳的目录
+        String fileName = FileUtil.getSimpleDateFormatFileName("scan", ".jpg");
+        String outputFilePath = folderPath + "/" + fileName;// 获得新的存放目录
+        return outputFilePath;
     }
 
     @Override

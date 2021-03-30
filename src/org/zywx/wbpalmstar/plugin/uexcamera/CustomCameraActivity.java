@@ -512,6 +512,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	public boolean onKeyUp(int keyCode, KeyEvent event) {
 		if (keyCode == KeyEvent.KEYCODE_BACK) {
 			if (mOnKeyDown) {
+				setResult(Activity.RESULT_CANCELED);
 				finish();
 			}
 			mOnKeyDown = false;
