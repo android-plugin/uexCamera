@@ -318,7 +318,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
     public void openInternal(String[] parm) {
         paramCustom = parm;
         if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED){
-            openCustomCamera(paramNomal);
+            openCustomCamera(paramCustom);
         }else{
             requsetPerssionsMore(new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, EUExUtil.getString("plugin_camera_permission_request_hint"), REQUSTCAMERACODECUSTOM);
         }
