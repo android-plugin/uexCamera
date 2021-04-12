@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="4.3.12.1" build="2021040101">
-        <info>12:优化调用两种相机申请权限的逻辑，并修复取消没有回调的问题</info>
+        uexName="uexCamera" version="4.3.13" build="2021041201">
+        <info>13:优化调用三种相机申请权限的逻辑，修复首次授权之后和下次app重启之前，无法使用相机的问题，以及openViewCamera的参数处理错误</info>
+        <build>12:优化调用两种相机申请权限的逻辑，并修复取消没有回调的问题</build>
         <build>11:修复自定义相机获取权限后再次调用接口可能导致闪退的问题</build>
         <build>10:修改manifest中的uses-feature配置，防止与uexScanner冲突</build>
         <build>9:修改自定义相机的取消配置</build>
