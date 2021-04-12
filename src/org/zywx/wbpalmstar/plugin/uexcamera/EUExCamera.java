@@ -112,9 +112,10 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
     }
 
-    @Override
-    public void onRequestPermissionResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
-        super.onRequestPermissionResult(requestCode, permissions, grantResults);
+    /**
+     * 处理权限申请结果
+     */
+    private void handleRequestPermissionResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
         switch (requestCode) {
             case REQUSTCAMERACODENOMAL:
                 if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
@@ -144,6 +145,18 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                 }
                 break;
         }
+    }
+
+    @Override
+    public void onRequestPermissionResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionResult(requestCode, permissions, grantResults);
+        // 将后续操作放入下一个loop中执行，防止权限授权尚未完成就使用可能造成的意想不到的bug。
+        mHandler.post(new Runnable() {
+            @Override
+            public void run() {
+                handleRequestPermissionResult(requestCode, permissions, grantResults);
+            }
+        });
     }
 
     /**
@@ -475,7 +488,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
     public void openViewCamera(String[] parm) {
         paramCustom2 = parm;
         if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED){
-            openCustomCamera2(paramNomal);
+            openCustomCamera2(paramCustom2);
         }else{
             requsetPerssionsMore(new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, EUExUtil.getString("plugin_camera_permission_request_hint"), REQUSTCAMERACODECUSTOM_VIEW_MODE);
         }
