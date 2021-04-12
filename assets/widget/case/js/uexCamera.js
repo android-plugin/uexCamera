@@ -9,26 +9,27 @@ if(UNIT_TEST){
             UNIT_TEST.assert(true);
         },
         "open":function(){
-            var comtextareass = '0';
+            var compress = '0';
             var quality = '100';
-            uexCamera.open(comtextareass, quality, function(savePath) {
+            uexCamera.open(compress, quality, function(savePath) {
                 if(savePath){
-                      UNIT_TEST.log(savePath);
-                      UNIT_TEST.assert(true);
-                    }else{
-                      UNIT_TEST.assert(false);
+                  UNIT_TEST.log(savePath);
+                  UNIT_TEST.assert(true);
+                }else{
+                  UNIT_TEST.assert(false);
                 }
             });
         },
         "openInternal":function(){
-            var comtextareass = '0';
+            var compress = '0';
             var quality = '100';
-            uexCamera.openInternal(comtextareass, quality, function(savePath) {
+            uexCamera.openInternal(compress, quality, function(savePath) {
+                console.log("openInternal: savePath=" + savePath);
                 if(savePath){
-                       UNIT_TEST.log(savePath);
-                       UNIT_TEST.assert(true);
-                   }else{
-                       UNIT_TEST.assert(false);
+                   UNIT_TEST.log(savePath);
+                   UNIT_TEST.assert(true);
+               }else{
+                   UNIT_TEST.assert(false);
                 }
             });
         },

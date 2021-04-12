@@ -7,6 +7,7 @@
     <string name="plugin_camera_take_photo_again">Again</string>
     <string name="plugin_camera_submit">Submit</string>
     <string name="plugin_camera_title_activity_second">uexCameraSecondActivity</string>
+    <string name="plugin_camera_permission_request_hint">Taking photos need camera and storage permission. Please grant the permissions to continue.</string>
     <string name="plugin_camera_permission_denied">Place check you camera permission</string>
     <string name="plugin_camera_low_memory_tips">There is not enough memory to open the camera</string>
 </resources>

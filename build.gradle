@@ -4,10 +4,7 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:3.0.1'
-
-        // NOTE: Do not place your application dependencies here; they belong
-        // in the individual module build.gradle files
+        classpath 'com.android.tools.build:gradle:4.1.2'
     }
 }
 
@@ -27,11 +24,11 @@ dependencies {
     implementation fileTree(dir: 'libs', include: '*.jar')
     //compile(name: 'Engine-system-release-4.0.0', ext: 'aar')//依赖本地引擎
 //    compile 'org.appcan:engine:+:systemRelease@aar'//依赖远程引擎
-    implementation ('org.appcan:engine:4.4.27')
+    implementation 'org.appcan:engine:4.6.42'
 }
 
 android {
-    compileSdkVersion 28
+    compileSdkVersion 30
 //    buildToolsVersion '23.0.2'
     lintOptions {
         abortOnError false
@@ -54,11 +51,11 @@ android {
 
     }
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_6
-        targetCompatibility JavaVersion.VERSION_1_6
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
     }
     defaultConfig {
-        minSdkVersion 18
+        minSdkVersion 22
         targetSdkVersion 28
         applicationId "org.zywx.wbpalmstar.widgetone.uexcamera"
         multiDexEnabled true
