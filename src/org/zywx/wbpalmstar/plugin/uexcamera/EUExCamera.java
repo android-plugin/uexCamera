@@ -11,6 +11,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Point;
 import android.media.ExifInterface;
 import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
 import android.os.StrictMode;
 import android.provider.MediaStore;
@@ -299,7 +300,12 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
             // 发Intent调用系统相机
             Intent cameraIntent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-            Uri uri = Uri.fromFile(mTempPath);
+            Uri uri;
+            if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N){
+                uri = Uri.fromFile(mTempPath);
+            }else{
+                uri = BUtility.getUriForFileWithFileProvider(mContext, mTempPath.getAbsolutePath());
+            }
             MLog.getIns().i("uri = " + uri.toString());
             cameraIntent.putExtra(MediaStore.EXTRA_OUTPUT, uri);// 设置系统相机拍摄照片完成后图片文件的存放地址
             cameraIntent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);// 设置IntentFlag,singleTask
