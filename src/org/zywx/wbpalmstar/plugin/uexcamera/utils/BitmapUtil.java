@@ -2,9 +2,20 @@ package org.zywx.wbpalmstar.plugin.uexcamera.utils;
 
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
 import android.graphics.Matrix;
+import android.graphics.Rect;
+
+import org.zywx.wbpalmstar.base.BDebug;
+
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.util.Locale;
 
 public class BitmapUtil {
+
+	private static final String TAG = "BitmapUtil";
 
 	/**
 	 * 计算SampleSize
@@ -37,13 +48,80 @@ public class BitmapUtil {
 	}
 
 	/**
+	 * 压缩图片到目标大小以下
+	 *
+	 * @param file
+	 * @param targetSize
+	 */
+	public void compressBmpFileToTargetSize(File file, long targetSize) {
+		BDebug.i(TAG, String.format(Locale.US, "compressBmpFileToTargetSize start file.length():%d", file.length()));
+		if (file.length() > targetSize) {
+			// 每次宽高各缩小一半
+			int ratio = 2;
+			// 获取图片原始宽高
+			BitmapFactory.Options options = new BitmapFactory.Options();
+			Bitmap bitmap = BitmapFactory.decodeFile(file.getAbsolutePath(), options);
+			int targetWidth = options.outWidth / ratio;
+			int targetHeight = options.outHeight / ratio;
+
+			// 压缩图片到对应尺寸
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			int quality = 100;
+			Bitmap result = generateScaledBmp(bitmap, targetWidth, targetHeight, baos, quality);
+
+			// 计数保护，防止次数太多太耗时。
+			int count = 0;
+			while (baos.size() > targetSize && count <= 10) {
+				targetWidth /= ratio;
+				targetHeight /= ratio;
+				count++;
+
+				// 重置，不然会累加
+				baos.reset();
+				result = generateScaledBmp(result, targetWidth, targetHeight, baos, quality);
+			}
+			try {
+				FileOutputStream fos = new FileOutputStream(file);
+				fos.write(baos.toByteArray());
+				fos.flush();
+				fos.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		BDebug.i(TAG, String.format(Locale.US, "compressBmpFileToTargetSize end file.length():%d", file.length()));
+	}
+
+	/**
+	 * 图片缩小一半
+	 *
+	 * @param srcBmp
+	 * @param targetWidth
+	 * @param targetHeight
+	 * @param baos
+	 * @param quality
+	 * @return
+	 */
+	private Bitmap generateScaledBmp(Bitmap srcBmp, int targetWidth, int targetHeight, ByteArrayOutputStream baos, int quality) {
+		Bitmap result = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888);
+		Canvas canvas = new Canvas(result);
+		Rect rect = new Rect(0, 0, result.getWidth(), result.getHeight());
+		canvas.drawBitmap(srcBmp, null, rect, null);
+		if (!srcBmp.isRecycled()) {
+			srcBmp.recycle();
+		}
+		result.compress(Bitmap.CompressFormat.JPEG, quality, baos);
+		return result;
+	}
+
+	/**
 	 * 旋转Bitmap
 	 * 
 	 * Rotates the bitmap by the specified degree. If a new bitmap is created,
 	 * the original bitmap is recycled.
 	 * 
 	 * @param bitmap
-	 * @param degrees
+	 * @param degree
 	 * @return
 	 */
 	public static Bitmap rotate(Bitmap bitmap, int degree) {

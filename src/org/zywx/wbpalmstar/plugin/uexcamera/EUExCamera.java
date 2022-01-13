@@ -18,6 +18,7 @@ import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.webkit.URLUtil;
@@ -40,6 +41,7 @@ import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.FileUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.MLog;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.MemoryUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenInternalVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenViewCameraVO;
 
 import java.io.BufferedOutputStream;
@@ -48,6 +50,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
@@ -344,82 +347,56 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
         }
     }
 
-    private void openCustomCamera(String[] parm) {
+    private OpenInternalVO parseOpenInternalParams(String[] params) {
+        OpenInternalVO openInternalVO = null;
+        if (params.length > 0 && isJson(params[0])) {
+            openInternalVO = DataHelper.gson.fromJson(params[0], OpenInternalVO.class);
+            if(params.length > 1) {
+                openInternalVO.setOpenInternalCallbackFuncId(params[1]);
+            }
+        } else {
+            openInternalVO = new OpenInternalVO();
+            if (params.length >= 1) {
+                OpenInternalVO.CompressOptions compressOptions = new OpenInternalVO.CompressOptions();
+                int isCompress = Integer.parseInt(params[0]);
+                // 这里做了一个兼容处理。老的传参逻辑是0为开启压缩，非0不压缩。由于新的json参数里0为不压缩，非0为压缩，因此这里做一个参数的转换。后面代码就可以统一为新逻辑。
+                compressOptions.setIsCompress(isCompress == 0 ? 1 : 0);
+
+                if (params.length >= 2) {
+                    int quality = Integer.parseInt(params[1]);
+                    compressOptions.setQuality(quality);
+
+                    if(params.length >= 3) {
+                        String callbackId = params[2];
+                        openInternalVO.setOpenInternalCallbackFuncId(callbackId);
+                    }
+                }
+                openInternalVO.setCompressOptions(compressOptions);
+            }
+        }
+        return openInternalVO;
+    }
+
+    private void openCustomCamera(String[] params) {
         // @formatter:on
         // 初始化压缩相关成员变量
         initCompressFields();
-
-        /**
-         * 如果参数>=1
-         */
-        if (parm.length >= 1) {
-
-            // 得到压缩标志
-            int value = 1;
-            try {
-                value = Integer.parseInt(parm[0]);
-            } catch (NumberFormatException e) {
-                e.printStackTrace();
-                MLog.getIns().e(e);
-            }
-            mIsCompress = value == 0 ? true : false;
-
-            /**
-             * 如果参数>=2 且 可压缩
-             */
-            if (parm.length >= 2 && mIsCompress) {
-
-                // 得到压缩质量
-                int quality = 100;
-                try {
-                    quality = Integer.parseInt(parm[1]);
-                } catch (NumberFormatException e) {
-                    e.printStackTrace();
-                    MLog.getIns().e(e);
-                }
-                mQuality = quality;
-
-                // 对mQuality进行容错处理
-                if (mQuality < 1 || mQuality > 100) {
-                    mQuality = 100;
-                }
-
-                /**
-                 * 如果参数>=3
-                 */
-//				if (parm.length >= 3) {
-//
-//					// 根据传入的宽高计算图片压缩比
-//					String photoValue = parm[2];
-//					try {
-//
-//						JSONObject jsonObject = new JSONObject(photoValue);
-//						int width = Integer.parseInt(jsonObject.getString("width"));
-//						int height = Integer.parseInt(jsonObject.getString("height"));
-//
-//						if (width > 0) {
-//							mPhotoWidth = width;
-//						}
-//						if (height > 0) {
-//							mPhotoHeight = height;
-//						}
-//
-//					} catch (JSONException e) {
-//
-//						e.printStackTrace();
-//						MLog.getIns().e(e);
-//						mPhotoWidth = -1;
-//						mPhotoHeight = -1;
-//
-//					} catch (NumberFormatException e) {
-//
-//						e.printStackTrace();
-//						MLog.getIns().e(e);
-//						mPhotoWidth = -1;
-//						mPhotoHeight = -1;
-//
-//					}
-//				}
+        // 解析参数
+        OpenInternalVO openInternalVO = parseOpenInternalParams(params);
+        if (openInternalVO == null) {
+            Log.e(TAG, "openCustomCamera 参数处理异常: " + Arrays.toString(params));
+            return;
+        }
+        // 判断压缩逻辑
+        OpenInternalVO.CompressOptions compressOptions = openInternalVO.getCompressOptions();
+        if (compressOptions != null) {
+            int isCompress = compressOptions.getIsCompress();
+            mIsCompress = isCompress > 0;
+            // 得到压缩质量
+            mQuality = compressOptions.getQuality();
+            // 对mQuality进行容错处理
+            if (mQuality < 1 || mQuality > 100) {
+                mQuality = 100;
             }
         }
 
@@ -454,11 +431,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                     MLog.getIns().e(e);
                 }
             }
-            int len = parm.length;
-            if (len > 2) {
-                openInternalFunc = parm[2];
-
-            }
+            openInternalFunc = openInternalVO.getOpenInternalCallbackFuncId();
             // 发Intent调用自定义相机
             Intent camaIntent = new Intent();
             MLog.getIns().i("mTempPath = " + mTempPath);
@@ -479,7 +452,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
         }
     }
 
-    boolean isJson(String str) {
+    private static boolean isJson(String str) {
         if (TextUtils.isEmpty(str)) {
             return false;
         }
