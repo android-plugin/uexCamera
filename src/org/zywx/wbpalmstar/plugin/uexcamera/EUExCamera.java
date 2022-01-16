@@ -384,7 +384,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
         // 解析参数
         OpenInternalVO openInternalVO = parseOpenInternalParams(params);
         if (openInternalVO == null) {
-            Log.e(TAG, "openCustomCamera 参数处理异常: " + Arrays.toString(params));
+            Log.e(TAG, "openInternal ==》 openCustomCamera 参数处理异常: " + Arrays.toString(params));
             return;
         }
         // 判断压缩逻辑

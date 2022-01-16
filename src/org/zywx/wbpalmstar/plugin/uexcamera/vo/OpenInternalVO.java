@@ -7,11 +7,20 @@ package org.zywx.wbpalmstar.plugin.uexcamera.vo;
  */
 public class OpenInternalVO {
 
+    private StorageOptions storageOptions;
     private WatermarkOptions watermarkOptions;
     private CompressOptions compressOptions;
     private String openInternalCallbackFuncId;
 
     public OpenInternalVO() {
+    }
+
+    public StorageOptions getStorageOptions() {
+        return storageOptions;
+    }
+
+    public void setStorageOptions(StorageOptions storageOptions) {
+        this.storageOptions = storageOptions;
     }
 
     public WatermarkOptions getWatermarkOptions() {
@@ -36,6 +45,18 @@ public class OpenInternalVO {
 
     public void setOpenInternalCallbackFuncId(String openInternalCallbackFuncId) {
         this.openInternalCallbackFuncId = openInternalCallbackFuncId;
+    }
+
+    public static class StorageOptions {
+        private String isPublic;
+
+        public String getIsPublic() {
+            return isPublic;
+        }
+
+        public void setIsPublic(String isPublic) {
+            this.isPublic = isPublic;
+        }
     }
 
     public static class WatermarkOptions {
