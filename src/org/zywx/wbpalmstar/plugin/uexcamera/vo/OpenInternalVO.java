@@ -1,41 +1,44 @@
 package org.zywx.wbpalmstar.plugin.uexcamera.vo;
 
+import android.os.Parcel;
+import android.os.Parcelable;
+
 /**
  * File Description: 打开自定义相机的参数实体类
  * <p>
  * Created by sandy with Email: sandy1108@163.com at Date: 2022/1/13.
  */
-public class OpenInternalVO {
+public class OpenInternalVO implements Parcelable {
 
-    private StorageOptions storageOptions;
-    private WatermarkOptions watermarkOptions;
-    private CompressOptions compressOptions;
+    private StorageOptionsVO storageOptions;
+    private WatermarkOptionsVO watermarkOptions;
+    private CompressOptionsVO compressOptions;
     private String openInternalCallbackFuncId;
 
     public OpenInternalVO() {
     }
 
-    public StorageOptions getStorageOptions() {
+    public StorageOptionsVO getStorageOptions() {
         return storageOptions;
     }
 
-    public void setStorageOptions(StorageOptions storageOptions) {
+    public void setStorageOptions(StorageOptionsVO storageOptions) {
         this.storageOptions = storageOptions;
     }
 
-    public WatermarkOptions getWatermarkOptions() {
+    public WatermarkOptionsVO getWatermarkOptions() {
         return watermarkOptions;
     }
 
-    public void setWatermarkOptions(WatermarkOptions watermarkOptions) {
+    public void setWatermarkOptions(WatermarkOptionsVO watermarkOptions) {
         this.watermarkOptions = watermarkOptions;
     }
 
-    public CompressOptions getCompressOptions() {
+    public CompressOptionsVO getCompressOptions() {
         return compressOptions;
     }
 
-    public void setCompressOptions(CompressOptions compressOptions) {
+    public void setCompressOptions(CompressOptionsVO compressOptions) {
         this.compressOptions = compressOptions;
     }
 
@@ -47,123 +50,42 @@ public class OpenInternalVO {
         this.openInternalCallbackFuncId = openInternalCallbackFuncId;
     }
 
-    public static class StorageOptions {
-        private String isPublic;
-
-        public String getIsPublic() {
-            return isPublic;
-        }
-
-        public void setIsPublic(String isPublic) {
-            this.isPublic = isPublic;
-        }
+    @Override
+    public int describeContents() {
+        return 0;
     }
 
-    public static class WatermarkOptions {
-        private int paddingY;
-        private int paddingX;
-        private String position;
-        private String markImage;
-        private String markText;
-
-        public int getPaddingY() {
-            return paddingY;
-        }
-
-        public void setPaddingY(int paddingY) {
-            this.paddingY = paddingY;
-        }
-
-        public int getPaddingX() {
-            return paddingX;
-        }
-
-        public void setPaddingX(int paddingX) {
-            this.paddingX = paddingX;
-        }
-
-        public String getPosition() {
-            return position;
-        }
-
-        public void setPosition(String position) {
-            this.position = position;
-        }
-
-        public String getMarkImage() {
-            return markImage;
-        }
-
-        public void setMarkImage(String markImage) {
-            this.markImage = markImage;
-        }
-
-        public String getMarkText() {
-            return markText;
-        }
-
-        public void setMarkText(String markText) {
-            this.markText = markText;
-        }
+    @Override
+    public void writeToParcel(Parcel dest, int flags) {
+        dest.writeParcelable(this.storageOptions, flags);
+        dest.writeParcelable(this.watermarkOptions, flags);
+        dest.writeParcelable(this.compressOptions, flags);
+        dest.writeString(this.openInternalCallbackFuncId);
     }
 
-    public static class CompressOptions {
-        private long fileSize;
-        private PhotoSize photoSize;
-        private int quality;
-        private int isCompress;
-
-        public long getFileSize() {
-            return fileSize;
-        }
-
-        public void setFileSize(long fileSize) {
-            this.fileSize = fileSize;
-        }
-
-        public PhotoSize getPhotoSize() {
-            return photoSize;
-        }
-
-        public void setPhotoSize(PhotoSize photoSize) {
-            this.photoSize = photoSize;
-        }
-
-        public int getQuality() {
-            return quality;
-        }
-
-        public void setQuality(int quality) {
-            this.quality = quality;
-        }
-
-        public int getIsCompress() {
-            return isCompress;
-        }
-
-        public void setIsCompress(int isCompress) {
-            this.isCompress = isCompress;
-        }
+    public void readFromParcel(Parcel source) {
+        this.storageOptions = source.readParcelable(StorageOptionsVO.class.getClassLoader());
+        this.watermarkOptions = source.readParcelable(WatermarkOptionsVO.class.getClassLoader());
+        this.compressOptions = source.readParcelable(CompressOptionsVO.class.getClassLoader());
+        this.openInternalCallbackFuncId = source.readString();
     }
 
-    public static class PhotoSize {
-        private int height;
-        private int width;
-
-        public int getHeight() {
-            return height;
-        }
-
-        public void setHeight(int height) {
-            this.height = height;
-        }
-
-        public int getWidth() {
-            return width;
-        }
-
-        public void setWidth(int width) {
-            this.width = width;
-        }
+    protected OpenInternalVO(Parcel in) {
+        this.storageOptions = in.readParcelable(StorageOptionsVO.class.getClassLoader());
+        this.watermarkOptions = in.readParcelable(WatermarkOptionsVO.class.getClassLoader());
+        this.compressOptions = in.readParcelable(CompressOptionsVO.class.getClassLoader());
+        this.openInternalCallbackFuncId = in.readString();
     }
+
+    public static final Creator<OpenInternalVO> CREATOR = new Creator<OpenInternalVO>() {
+        @Override
+        public OpenInternalVO createFromParcel(Parcel source) {
+            return new OpenInternalVO(source);
+        }
+
+        @Override
+        public OpenInternalVO[] newArray(int size) {
+            return new OpenInternalVO[size];
+        }
+    };
 }

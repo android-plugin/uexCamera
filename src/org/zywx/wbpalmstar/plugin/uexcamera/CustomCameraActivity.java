@@ -1,55 +1,59 @@
 package org.zywx.wbpalmstar.plugin.uexcamera;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.lang.reflect.Method;
-import java.text.DecimalFormat;
-import java.util.ArrayList;
-import java.util.List;
 import android.R.integer;
 import android.annotation.SuppressLint;
 import android.app.Activity;
-
+import android.content.ContentValues;
+import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Matrix;
 import android.graphics.Rect;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.CameraInfo;
-
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.PictureCallback;
-
+import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
 import android.os.Handler;
 import android.os.Message;
+import android.provider.MediaStore;
+import android.support.annotation.RequiresApi;
+import android.text.format.DateUtils;
 import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.KeyEvent;
 import android.view.MotionEvent;
 import android.view.OrientationEventListener;
 import android.view.SurfaceHolder;
-import android.view.View;
-
-import android.view.WindowManager;
 import android.view.SurfaceHolder.Callback;
 import android.view.SurfaceView;
+import android.view.View;
 import android.view.View.OnClickListener;
 import android.view.View.OnTouchListener;
-
 import android.view.Window;
+import android.view.WindowManager;
 import android.widget.Button;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
-
 import android.widget.Toast;
+
+import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenInternalVO;
+
+import java.io.BufferedOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.lang.reflect.Method;
+import java.text.DecimalFormat;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * 自定义相机Activity
@@ -59,6 +63,8 @@ import android.widget.Toast;
  */
 public class CustomCameraActivity extends Activity implements Callback, AutoFocusCallback {
 
+	private static final String TAG = "CustomCameraActivity";
+	
 	// View
 	public SurfaceView mSurfaceView;
 	private Button mBtnCancel;
@@ -73,9 +79,12 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	// Camera相关
 	public Camera mCamera;
 	public String filePath = null;// 照片保存路径
+	public OpenInternalVO openInternalVO = null;// 额外参数
 	private boolean hasSurface;
 	private boolean isOpenFlash = true;
 	public int cameraCurrentlyLocked;
+
+	private byte[] mPictureBytesData;
 
 	// The first rear facing camera
 	private ArrayList<Integer> flashDrawableIds;
@@ -121,6 +130,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		setRequestedOrientation(ActivityInfo.SCREEN_ORIENTATION_PORTRAIT);
 		setContentView(CRes.plugin_camera_layout);
 		filePath = getIntent().getStringExtra(Constant.INTENT_EXTRA_NAME_PHOTO_PATH);
+		openInternalVO = getIntent().getParcelableExtra(Constant.INTENT_EXTRA_OPTIONS);
 
 		int numberOfCameras = Camera.getNumberOfCameras();
 		CameraInfo cameraInfo = new CameraInfo();
@@ -228,7 +238,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				}
 				if (mPreviewing) {
 					mPreviewing = false;
-					mCamera.takePicture(null, null, jpeg);
+					mCamera.takePicture(null, null, pictureCallback);
 				} else {
 					Toast.makeText(CustomCameraActivity.this, "摄像机正忙", Toast.LENGTH_SHORT).show();
 				}
@@ -279,18 +289,23 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		if (diff > 180) {
 			diff = 360 - diff;
 		}
+		orientation = (orientation + 45) / 90 * 90;
 		// only change orientation when sufficiently changed
 		if (diff > 60) {
-			orientation = (orientation + 45) / 90 * 90;
 			if (orientation != current_orientation) {
 				current_orientation = orientation;
 				if (mPreviewing) {
 					picture_orientation = orientation;
 				}
-				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-					setViewRotation();
-				}
+				setViewRotation();
 			}
+		}
+		int rotation = getRotate();
+		Log.i("TAG","onOrientationChanged orientation: " + orientation);
+		if (null != mCamera) {
+			Camera.Parameters parameters = mCamera.getParameters();
+			parameters.setRotation(rotation);
+			mCamera.setParameters(parameters);
 		}
 	}
 
@@ -384,7 +399,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			mCamera.setPreviewDisplay(surfaceHolder);
 			mCamera.startPreview();
 			mPreviewing = true;
-			Log.d("mPreviewing", "after inti camera mPreviewing changed to :" + mPreviewing);
+			Log.i(TAG, "mPreviewing after inti camera mPreviewing changed to :" + mPreviewing);
 			mCamera.autoFocus(this);
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -543,13 +558,13 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		hasSurface = false;
 	}
 
-	PictureCallback jpeg = new PictureCallback() {
+	PictureCallback pictureCallback = new PictureCallback() {
 		@Override
 		public void onPictureTaken(byte[] data, Camera camera) {
-			Log.d("run", "into picture call back");
+			Log.d(TAG, "into picture call back");
 			mHandleTask = new HandlePicAsyncTask();
 			mHandleTask.execute(data);
-			Log.d("run", "execute asynctask");
+			Log.d(TAG, "execute asynctask");
 		}
 	};
 
@@ -557,9 +572,10 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 
 		@Override
 		protected Bitmap doInBackground(byte[]... params) {
-			Log.d("run", "background  start run");
+			Log.d(TAG, "background  start run");
 			Bitmap bm = null;
 			final byte[] data = params[0];
+			mPictureBytesData = data;
 			saveImage(data);
 			bm = createThumbnail(data);
 			return bm;
@@ -568,12 +584,12 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		@Override
 		protected void onPostExecute(Bitmap bm) {
 			super.onPostExecute(bm);
-			Log.d("run", "postexecute  start run");
+			Log.d(TAG, "onPostExecute  start run");
 			setIvPreShowBitmap(bm);
 			mCamera.startPreview();
 			mPreviewing = true;
-			Log.d("mPreviewing", " after take pic mPreviewing changed to :" + mPreviewing);
-			Log.d("run", "postexecute  end run");
+			Log.d(TAG, " after take pic mPreviewing changed to :" + mPreviewing);
+			Log.d(TAG, "onPostExecute  end run");
 		}
 	}
 
@@ -600,22 +616,6 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		return r;
 	}
 
-	private Bitmap rotateImage(Bitmap bitmap) {
-		Matrix m = new Matrix();
-		m.setRotate(getRotate(), bitmap.getWidth() * 0.5f, bitmap.getHeight() * 0.5f);
-		try {
-			Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m, true);
-			// If the rotated bitmap is the original bitmap, then it
-			// should not be recycled.
-			if (rotated != bitmap)
-				bitmap.recycle();
-			return rotated;
-		} catch (Throwable t) {
-			t.printStackTrace();
-		}
-		return bitmap;
-	}
-
 	public Bitmap createThumbnail(byte[] data) {
 		Bitmap bm = null;
 		try {
@@ -626,7 +626,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			BitmapFactory.Options options = new BitmapFactory.Options();
 			options.inSampleSize = inSampleSize;
 			bm = BitmapFactory.decodeByteArray(data, 0, data.length, options);
-			bm = rotateImage(bm);
+//			bm = rotateImage(bm);
 		} catch (Exception e) {
 			e.printStackTrace();
 		}
@@ -634,29 +634,115 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	}
 
 	private void saveImage(byte[] data) {
-		try {
-			BitmapFactory.Options opts = new BitmapFactory.Options();
-			opts.inJustDecodeBounds = true;
-			BitmapFactory.decodeByteArray(data, 0, data.length, opts);
-			DisplayMetrics dm = new DisplayMetrics();
-			getWindowManager().getDefaultDisplay().getMetrics(dm);
-			opts.inSampleSize = calculateInSampleSize(opts, dm.heightPixels, dm.widthPixels);
-			opts.inPurgeable = true;
-			opts.inInputShareable = true;
-			opts.inTempStorage = new byte[64 * 1024];
-			opts.inJustDecodeBounds = false;
-			Bitmap bm = BitmapFactory.decodeByteArray(data, 0, data.length, opts);
-			if (bm != null) {
-				bm = Util.rotate(bm, getRotate());
-				File file = new File(filePath);
-				BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(file));
-				bm.compress(Bitmap.CompressFormat.JPEG, 100, bos);
-				bos.flush();
-				bos.close();
+		File pictureFile = new File(filePath);
+		if (openInternalVO == null
+				|| openInternalVO.getCompressOptions() == null
+				|| openInternalVO.getCompressOptions().getIsCompress() == 0) {
+			try {
+				BitmapFactory.Options opts = new BitmapFactory.Options();
+				opts.inJustDecodeBounds = true;
+				BitmapFactory.decodeByteArray(data, 0, data.length, opts);
+				DisplayMetrics dm = new DisplayMetrics();
+				getWindowManager().getDefaultDisplay().getMetrics(dm);
+				opts.inSampleSize = calculateInSampleSize(opts, dm.heightPixels, dm.widthPixels);
+				opts.inPurgeable = true;
+				opts.inInputShareable = true;
+				opts.inTempStorage = new byte[64 * 1024];
+				opts.inJustDecodeBounds = false;
+				Bitmap bm = BitmapFactory.decodeByteArray(data, 0, data.length, opts);
+				if (bm != null) {
+//					bm = Util.rotate(bm, getRotate());
+					BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(pictureFile));
+					bm.compress(Bitmap.CompressFormat.JPEG, 100, bos);
+					bos.flush();
+					bos.close();
+				}
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
+		}
+		// 根据参数处理将图片保存在应用内部还是保存在相册中
+		if (openInternalVO != null
+				&& openInternalVO.getStorageOptions() != null
+				&& "1".equals(openInternalVO.getStorageOptions().getIsPublic())) {
+			// 开启了公共存储，需要将图片写入相册
+			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
+				updateAlbum(data, pictureFile.getName());
+			} else {
+				// TODO
+				Log.e(TAG, "系统版本低于R，暂不处理写入相册逻辑");
+			}
+		} else {
+			// 关闭了公共存储，故不需要更新到相册
+			Log.i(TAG, "storageOptions isPublic is 0, no need to updateAlbum");
+		}
+		// 写入应用内本地文件
+		if (!pictureFile.exists()) {
+			try {
+				pictureFile.createNewFile();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		}
+		try {
+			FileOutputStream fos = new FileOutputStream(pictureFile);
+			fos.write(data);
+			fos.close();
 		} catch (Exception e) {
 			e.printStackTrace();
+			Log.e(TAG,"saveImage 照片存储失败");
 		}
+	}
+
+	/**
+	 * 更新到相册
+	 *
+	 * @param data
+	 */
+	@RequiresApi(api = Build.VERSION_CODES.R)
+	private void updateAlbum(byte[] data, String fileName){
+//		Uri fileUri = BUtility.getUriForFileWithFileProvider(this, file.getAbsolutePath());
+//		String fileName = "test.jpg";
+		long imageTokenTime = System.currentTimeMillis();
+		// 插入file数据到相册
+		ContentValues values = new ContentValues(9);
+		values.put(MediaStore.MediaColumns.DISPLAY_NAME, fileName);
+		String relativeDirPath = Environment.DIRECTORY_PICTURES + File.separator + "AppCanDCIM";
+		values.put(MediaStore.Images.Media.TITLE, "AppCanCamera");
+		values.put(MediaStore.Images.Media.DATE_TAKEN, imageTokenTime);
+		values.put(MediaStore.Images.Media.MIME_TYPE, "image/jpeg");
+//		values.put(MediaStore.Images.Media.ORIENTATION, getRotate());
+		values.put(MediaStore.Images.Media.SIZE, data.length);
+		values.put(MediaStore.MediaColumns.RELATIVE_PATH, relativeDirPath);
+		values.put(MediaStore.MediaColumns.IS_PENDING, 1);
+		values.put(MediaStore.MediaColumns.DATE_EXPIRES, (imageTokenTime + DateUtils.DAY_IN_MILLIS) / 1000);
+		Uri uri = CustomCameraActivity.this.getContentResolver().insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values);
+		OutputStream outputStream = null;
+		try {
+			outputStream = CustomCameraActivity.this.getContentResolver().openOutputStream(uri);
+			outputStream.write(data);
+			outputStream.flush();
+			Log.i(TAG, "storageOptions isPublic is 1, updateAlbum and write to ExternalStorage Path: " + relativeDirPath);
+			// Everything went well above, publish it!
+			values.clear();
+			values.put(MediaStore.MediaColumns.IS_PENDING, 0);
+			values.putNull(MediaStore.MediaColumns.DATE_EXPIRES);
+			CustomCameraActivity.this.getContentResolver().update(uri, values, null, null);
+			Log.i(TAG, "updateAlbum complete!");
+		} catch (IOException e) {
+			e.printStackTrace();
+			CustomCameraActivity.this.getContentResolver().delete(uri, null);
+		} finally {
+			try {
+				if (outputStream != null) {
+					outputStream.close();
+				}
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
+		}
+		// 通知相册更新
+		CustomCameraActivity.this.sendBroadcast(new Intent("com.android.camera.NEW_PICTURE", uri));
 	}
 
 	private static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {

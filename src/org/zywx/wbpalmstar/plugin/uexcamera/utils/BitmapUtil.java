@@ -168,4 +168,23 @@ public class BitmapUtil {
 		return bitmap;
 	}
 
+	/**
+	 * @deprecated 已废弃方法
+	 */
+	private Bitmap rotateImage(Bitmap bitmap, int degree) {
+		Matrix m = new Matrix();
+		m.setRotate(degree, bitmap.getWidth() * 0.5f, bitmap.getHeight() * 0.5f);
+		try {
+			Bitmap rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.getWidth(), bitmap.getHeight(), m, true);
+			// If the rotated bitmap is the original bitmap, then it
+			// should not be recycled.
+			if (rotated != bitmap)
+				bitmap.recycle();
+			return rotated;
+		} catch (Throwable t) {
+			t.printStackTrace();
+		}
+		return bitmap;
+	}
+
 }

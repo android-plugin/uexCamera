@@ -14,5 +14,6 @@ public class Constant {
 	
 	// EUExCamera跳转到自定义相机需要传的数据
 	public static final String INTENT_EXTRA_NAME_PHOTO_PATH = "photoPath";// 图片路径
+	public static final String INTENT_EXTRA_OPTIONS = "extraOptions";// 图片路径
 
 }

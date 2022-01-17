@@ -41,6 +41,7 @@ import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.FileUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.MLog;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.MemoryUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.vo.CompressOptionsVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenInternalVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenViewCameraVO;
 
@@ -357,7 +358,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
         } else {
             openInternalVO = new OpenInternalVO();
             if (params.length >= 1) {
-                OpenInternalVO.CompressOptions compressOptions = new OpenInternalVO.CompressOptions();
+                CompressOptionsVO compressOptions = new CompressOptionsVO();
                 int isCompress = Integer.parseInt(params[0]);
                 // 这里做了一个兼容处理。老的传参逻辑是0为开启压缩，非0不压缩。由于新的json参数里0为不压缩，非0为压缩，因此这里做一个参数的转换。后面代码就可以统一为新逻辑。
                 compressOptions.setIsCompress(isCompress == 0 ? 1 : 0);
@@ -388,7 +389,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
             return;
         }
         // 判断压缩逻辑
-        OpenInternalVO.CompressOptions compressOptions = openInternalVO.getCompressOptions();
+        CompressOptionsVO compressOptions = openInternalVO.getCompressOptions();
         if (compressOptions != null) {
             int isCompress = compressOptions.getIsCompress();
             mIsCompress = isCompress > 0;
@@ -412,16 +413,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
         // 如果SD卡可以工作
         if (BUtility.sdCardIsWork()) {
 
-            // 如果不压缩
-            if (!mIsCompress) {
-                String outputPath = generateOutputPhotoFilePath();// 获得新的存放目录
-                mTempPath = new File(outputPath);
-            } else {
-
-                // 使用临时文件名存储文件
-                mTempPath = new File(BUtility.getSdCardRootPath() + "demo.jpg");
-            }
-
+            String outputPath = generateOutputPhotoFilePath();// 获得新的存放目录
+            mTempPath = new File(outputPath);
             // 如果不存在，创建
             if (!mTempPath.exists()) {
                 try {
@@ -433,12 +426,13 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
             }
             openInternalFunc = openInternalVO.getOpenInternalCallbackFuncId();
             // 发Intent调用自定义相机
-            Intent camaIntent = new Intent();
+            Intent cameraIntent = new Intent();
             MLog.getIns().i("mTempPath = " + mTempPath);
-            camaIntent.setClass(mContext, CustomCameraActivity.class);
-            camaIntent.putExtra(Constant.INTENT_EXTRA_NAME_PHOTO_PATH, mTempPath.getAbsolutePath());
-            camaIntent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
-            startActivityForResult(camaIntent, Constant.REQUEST_CODE_INTERNAL_CAMERA);
+            cameraIntent.setClass(mContext, CustomCameraActivity.class);
+            cameraIntent.putExtra(Constant.INTENT_EXTRA_NAME_PHOTO_PATH, mTempPath.getAbsolutePath());
+            cameraIntent.putExtra(Constant.INTENT_EXTRA_OPTIONS, openInternalVO);
+            cameraIntent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
+            startActivityForResult(cameraIntent, Constant.REQUEST_CODE_INTERNAL_CAMERA);
 
         }
 
@@ -448,7 +442,6 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
             MLog.getIns().e("SD卡不可用");
             Toast.makeText(mContext, EUExUtil.getString("error_sdcard_is_not_available"), Toast.LENGTH_SHORT).show();
             errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, EUExUtil.getString("error_sdcard_is_not_available"));
-            return;
         }
     }
 
