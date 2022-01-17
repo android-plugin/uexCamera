@@ -43,6 +43,7 @@ import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
 import android.widget.Toast;
 
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenInternalVO;
 
 import java.io.BufferedOutputStream;
@@ -635,16 +636,20 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 
 	private void saveImage(byte[] data) {
 		File pictureFile = new File(filePath);
-		if (openInternalVO == null
+		if (pictureFile.exists()) {
+			pictureFile.delete();
+		}
+		if (!(openInternalVO == null
 				|| openInternalVO.getCompressOptions() == null
-				|| openInternalVO.getCompressOptions().getIsCompress() == 0) {
+				|| openInternalVO.getCompressOptions().getIsCompress() == 0)) {
+			// 开启压缩
 			try {
 				BitmapFactory.Options opts = new BitmapFactory.Options();
 				opts.inJustDecodeBounds = true;
 				BitmapFactory.decodeByteArray(data, 0, data.length, opts);
 				DisplayMetrics dm = new DisplayMetrics();
 				getWindowManager().getDefaultDisplay().getMetrics(dm);
-				opts.inSampleSize = calculateInSampleSize(opts, dm.heightPixels, dm.widthPixels);
+				opts.inSampleSize = BitmapUtil.calculateInSampleSize(opts, dm.heightPixels, dm.widthPixels);
 				opts.inPurgeable = true;
 				opts.inInputShareable = true;
 				opts.inTempStorage = new byte[64 * 1024];
@@ -743,26 +748,6 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		}
 		// 通知相册更新
 		CustomCameraActivity.this.sendBroadcast(new Intent("com.android.camera.NEW_PICTURE", uri));
-	}
-
-	private static int calculateInSampleSize(BitmapFactory.Options options, int reqWidth, int reqHeight) {
-		// Raw height and width of image
-		final int height = options.outHeight;
-		final int width = options.outWidth;
-		int inSampleSize = 1;
-
-		if (height > reqHeight || width > reqWidth) {
-			final int halfHeight = height / 2;
-			final int halfWidth = width / 2;
-
-			// Calculate the largest inSampleSize value that is a power of 2 and
-			// keeps both
-			// height and width larger than the requested height and width.
-			while ((halfHeight / inSampleSize) > reqHeight && (halfWidth / inSampleSize) > reqWidth) {
-				inSampleSize *= 2;
-			}
-		}
-		return inSampleSize;
 	}
 
 	@SuppressWarnings("unused")

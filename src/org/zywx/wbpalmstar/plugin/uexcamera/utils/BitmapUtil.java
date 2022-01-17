@@ -47,6 +47,26 @@ public class BitmapUtil {
 		return inSampleSize;
 	}
 
+	private static int calculateInSampleSizeWithWhile(BitmapFactory.Options options, int reqWidth, int reqHeight) {
+		// Raw height and width of image
+		final int height = options.outHeight;
+		final int width = options.outWidth;
+		int inSampleSize = 1;
+
+		if (height > reqHeight || width > reqWidth) {
+			final int halfHeight = height / 2;
+			final int halfWidth = width / 2;
+
+			// Calculate the largest inSampleSize value that is a power of 2 and
+			// keeps both
+			// height and width larger than the requested height and width.
+			while ((halfHeight / inSampleSize) > reqHeight && (halfWidth / inSampleSize) > reqWidth) {
+				inSampleSize *= 2;
+			}
+		}
+		return inSampleSize;
+	}
+
 	/**
 	 * 压缩图片到目标大小以下
 	 *
@@ -90,6 +110,45 @@ public class BitmapUtil {
 			}
 		}
 		BDebug.i(TAG, String.format(Locale.US, "compressBmpFileToTargetSize end file.length():%d", file.length()));
+	}
+
+	/**
+	 * 压缩图片到目标大小以下
+	 *
+	 * @param bitmapData
+	 * @param targetSize
+	 */
+	public Bitmap compressBmpFileToTargetSize(byte[] bitmapData, long targetSize) {
+		BDebug.i(TAG, String.format(Locale.US, "compressBmpFileToTargetSize start file.length():%d", bitmapData.length));
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		Bitmap finalResult = null;
+		if (bitmapData.length > targetSize) {
+			// 每次宽高各缩小一半
+			int ratio = 2;
+			// 获取图片原始宽高
+			BitmapFactory.Options options = new BitmapFactory.Options();
+			Bitmap sourceBitmap = BitmapFactory.decodeByteArray(bitmapData, 0, bitmapData.length, options);
+			int targetWidth = options.outWidth / ratio;
+			int targetHeight = options.outHeight / ratio;
+
+			// 压缩图片到对应尺寸
+			int quality = 100;
+			Bitmap result = generateScaledBmp(sourceBitmap, targetWidth, targetHeight, baos, quality);
+
+			// 计数保护，防止次数太多太耗时。
+			int count = 0;
+			while (baos.size() > targetSize && count <= 10) {
+				targetWidth /= ratio;
+				targetHeight /= ratio;
+				count++;
+				// 重置，不然会累加
+				baos.reset();
+				result = generateScaledBmp(result, targetWidth, targetHeight, baos, quality);
+			}
+			finalResult = result;
+		}
+		BDebug.i(TAG, String.format(Locale.US, "compressBmpFileToTargetSize end baos.size():%d", baos.size()));
+		return finalResult;
 	}
 
 	/**
