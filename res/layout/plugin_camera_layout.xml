@@ -30,7 +30,7 @@
                 android:padding="5dp"
                 android:text="@string/plugin_camera_cancel"
                 android:textColor="@color/white"
-                android:textSize="24dp" />
+                android:textSize="24sp" />
 
             <Button
                 android:id="@+id/plugin_camera_bt_complete"
@@ -43,7 +43,7 @@
                 android:padding="5dp"
                 android:text="@string/plugin_camera_complete"
                 android:textColor="@color/white"
-                android:textSize="24dp" />
+                android:textSize="24sp" />
 
             <Button
                 android:id="@+id/plugin_camera_bt_takepic"

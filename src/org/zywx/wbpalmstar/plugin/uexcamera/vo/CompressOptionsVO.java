@@ -12,7 +12,7 @@ import android.os.Parcelable;
 public class CompressOptionsVO implements Parcelable {
     private long fileSize;
     private PhotoSizeVO photoSize;
-    private int quality;
+    private int quality = 100;
     private int isCompress;
 
     public long getFileSize() {

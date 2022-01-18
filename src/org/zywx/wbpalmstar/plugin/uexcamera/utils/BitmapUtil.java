@@ -73,7 +73,7 @@ public class BitmapUtil {
 	 * @param file
 	 * @param targetSize
 	 */
-	public void compressBmpFileToTargetSize(File file, long targetSize) {
+	public static void compressBmpFileToTargetSize(File file, long targetSize) {
 		BDebug.i(TAG, String.format(Locale.US, "compressBmpFileToTargetSize start file.length():%d", file.length()));
 		if (file.length() > targetSize) {
 			// 每次宽高各缩小一半
@@ -118,7 +118,7 @@ public class BitmapUtil {
 	 * @param bitmapData
 	 * @param targetSize
 	 */
-	public Bitmap compressBmpFileToTargetSize(byte[] bitmapData, long targetSize) {
+	public static Bitmap compressBmpFileToTargetSize(byte[] bitmapData, long targetSize) {
 		BDebug.i(TAG, String.format(Locale.US, "compressBmpFileToTargetSize start file.length():%d", bitmapData.length));
 		ByteArrayOutputStream baos = new ByteArrayOutputStream();
 		Bitmap finalResult = null;
@@ -161,7 +161,7 @@ public class BitmapUtil {
 	 * @param quality
 	 * @return
 	 */
-	private Bitmap generateScaledBmp(Bitmap srcBmp, int targetWidth, int targetHeight, ByteArrayOutputStream baos, int quality) {
+	private static Bitmap generateScaledBmp(Bitmap srcBmp, int targetWidth, int targetHeight, ByteArrayOutputStream baos, int quality) {
 		Bitmap result = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888);
 		Canvas canvas = new Canvas(result);
 		Rect rect = new Rect(0, 0, result.getWidth(), result.getHeight());
@@ -230,7 +230,7 @@ public class BitmapUtil {
 	/**
 	 * @deprecated 已废弃方法
 	 */
-	private Bitmap rotateImage(Bitmap bitmap, int degree) {
+	private static Bitmap rotateImage(Bitmap bitmap, int degree) {
 		Matrix m = new Matrix();
 		m.setRotate(degree, bitmap.getWidth() * 0.5f, bitmap.getHeight() * 0.5f);
 		try {

@@ -21,6 +21,7 @@ import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
+import android.os.Looper;
 import android.os.Message;
 import android.provider.MediaStore;
 import android.support.annotation.RequiresApi;
@@ -45,8 +46,10 @@ import android.widget.Toast;
 
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenInternalVO;
+import org.zywx.wbpalmstar.plugin.uexcamera.vo.PhotoSizeVO;
 
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -55,6 +58,8 @@ import java.lang.reflect.Method;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 /**
  * 自定义相机Activity
@@ -86,6 +91,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	public int cameraCurrentlyLocked;
 
 	private byte[] mPictureBytesData;
+	private ExecutorService mExecutorService;
 
 	// The first rear facing camera
 	private ArrayList<Integer> flashDrawableIds;
@@ -125,6 +131,9 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		CRes.init(getApplication());
 
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
+
+		mExecutorService = Executors.newFixedThreadPool(1);
+
 		Window window = getWindow();
 		window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
 		window.addFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN);
@@ -223,10 +232,26 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		mBtnHandler.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
+				// TODO 增加显示进度提示框等待
 				if (isHasPic) {
-					setResult(RESULT_OK);
-					onPause();
-					finish();
+					mExecutorService.submit(new Runnable() {
+						@Override
+						public void run() {
+							saveImage(mPictureBytesData);
+							mPictureBytesData = null;
+							Handler uiThread = new Handler(Looper.getMainLooper());
+							uiThread.post(new Runnable() {
+								@Override
+								public void run() {
+									// TODO 关闭进度提示框等待
+									// 更新你的UI
+									setResult(RESULT_OK);
+									onPause();
+									finish();
+								}
+							});
+						}
+					});
 				}
 
 			}
@@ -577,7 +602,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			Bitmap bm = null;
 			final byte[] data = params[0];
 			mPictureBytesData = data;
-			saveImage(data);
+//			saveImage(mPictureBytesData);
 			bm = createThumbnail(data);
 			return bm;
 		}
@@ -638,32 +663,74 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		File pictureFile = new File(filePath);
 		if (pictureFile.exists()) {
 			pictureFile.delete();
+		} else {
+			try {
+				pictureFile.createNewFile();
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
 		}
 		if (!(openInternalVO == null
 				|| openInternalVO.getCompressOptions() == null
 				|| openInternalVO.getCompressOptions().getIsCompress() == 0)) {
+			Bitmap bm = null;
+			int quality = 100;
 			// 开启压缩
+			if(openInternalVO.getCompressOptions().getIsCompress() == 1 || openInternalVO.getCompressOptions().getIsCompress() == 2) {
+				PhotoSizeVO photoSizeVO = openInternalVO.getCompressOptions().getPhotoSize();
+				quality = openInternalVO.getCompressOptions().getQuality();
+				if (photoSizeVO != null) {
+					BitmapFactory.Options opts = new BitmapFactory.Options();
+					opts.inJustDecodeBounds = true;
+					BitmapFactory.decodeByteArray(data, 0, data.length, opts);
+					opts.inSampleSize = BitmapUtil.calculateInSampleSize(opts, photoSizeVO.getHeight(), photoSizeVO.getWidth());
+					opts.inPurgeable = true;
+					opts.inInputShareable = true;
+					opts.inTempStorage = new byte[64 * 1024];
+					opts.inJustDecodeBounds = false;
+					bm = BitmapFactory.decodeByteArray(data, 0, data.length, opts);
+				} else {
+					bm = BitmapFactory.decodeByteArray(data, 0, data.length);
+					// 使用quality压缩，取值1-100
+					if (quality > 100 || quality <= 0) {
+						quality = 100;
+						Log.w(TAG, "compress quality is invalid: " + quality + ". change it to 100");
+					}
+				}
+			} else {
+				// 非0情况下，非1非2，目前只有3的情况，即给定目标文件大小，循环压缩到指定大小。
+				long targetSize = openInternalVO.getCompressOptions().getFileSize();
+				bm = BitmapUtil.compressBmpFileToTargetSize(data, targetSize);
+			}
 			try {
-				BitmapFactory.Options opts = new BitmapFactory.Options();
-				opts.inJustDecodeBounds = true;
-				BitmapFactory.decodeByteArray(data, 0, data.length, opts);
-				DisplayMetrics dm = new DisplayMetrics();
-				getWindowManager().getDefaultDisplay().getMetrics(dm);
-				opts.inSampleSize = BitmapUtil.calculateInSampleSize(opts, dm.heightPixels, dm.widthPixels);
-				opts.inPurgeable = true;
-				opts.inInputShareable = true;
-				opts.inTempStorage = new byte[64 * 1024];
-				opts.inJustDecodeBounds = false;
-				Bitmap bm = BitmapFactory.decodeByteArray(data, 0, data.length, opts);
 				if (bm != null) {
 //					bm = Util.rotate(bm, getRotate());
 					BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(pictureFile));
-					bm.compress(Bitmap.CompressFormat.JPEG, 100, bos);
+					bm.compress(Bitmap.CompressFormat.JPEG, quality, bos);
 					bos.flush();
 					bos.close();
+
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					bm.compress(Bitmap.CompressFormat.JPEG, quality, baos);
+//					Runtime.getRuntime().gc();
+					mPictureBytesData = null;
+					data = baos.toByteArray();
+					mPictureBytesData = data;
 				}
+				// 图片文件以JPEG格式写入本地完毕
 			} catch (Exception e) {
 				e.printStackTrace();
+			}
+		} else {
+			// 无压缩，正常保存
+			Log.i(TAG, "不进行压缩，正常保存： " + pictureFile);
+			try {
+				FileOutputStream fos = new FileOutputStream(pictureFile);
+				fos.write(data);
+				fos.close();
+			} catch (Exception e) {
+				e.printStackTrace();
+				Log.e(TAG,"saveImage 照片存储失败");
 			}
 		}
 		// 根据参数处理将图片保存在应用内部还是保存在相册中
@@ -680,22 +747,6 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		} else {
 			// 关闭了公共存储，故不需要更新到相册
 			Log.i(TAG, "storageOptions isPublic is 0, no need to updateAlbum");
-		}
-		// 写入应用内本地文件
-		if (!pictureFile.exists()) {
-			try {
-				pictureFile.createNewFile();
-			} catch (Exception e) {
-				e.printStackTrace();
-			}
-		}
-		try {
-			FileOutputStream fos = new FileOutputStream(pictureFile);
-			fos.write(data);
-			fos.close();
-		} catch (Exception e) {
-			e.printStackTrace();
-			Log.e(TAG,"saveImage 照片存储失败");
 		}
 	}
 
@@ -750,13 +801,6 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		CustomCameraActivity.this.sendBroadcast(new Intent("com.android.camera.NEW_PICTURE", uri));
 	}
 
-	@SuppressWarnings("unused")
-	private int mOrientation = OrientationEventListener.ORIENTATION_UNKNOWN;
-
-	public static int roundOrientation(int orientation) {
-		return ((orientation + 45) / 90 * 90) % 360;
-	}
-
 	@Override
 	public void onAutoFocus(boolean success, Camera camera) {
 		if (success) {
@@ -771,7 +815,6 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 
 	private void setFocusView() {
 		new Handler().postDelayed(new Runnable() {
-
 			@Override
 			public void run() {
 				view_focus.setVisibility(View.INVISIBLE);
