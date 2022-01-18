@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="4.3.13.1" build="2021042901">
-        <info>13.1:处理了openInternal可能导致的闪退问题</info>
+        uexName="uexCamera" version="4.3.14" build="2022011801">
+        <info>14:优化自定义相机的清晰度问题，以及性能问题</info>
+        <build>13.1:处理了openInternal可能导致的闪退问题</build>
         <build>13:优化调用三种相机申请权限的逻辑，修复首次授权之后和下次app重启之前，无法使用相机的问题，以及openViewCamera的参数处理错误</build>
         <build>12:优化调用两种相机申请权限的逻辑，并修复取消没有回调的问题</build>
         <build>11:修复自定义相机获取权限后再次调用接口可能导致闪退的问题</build>
