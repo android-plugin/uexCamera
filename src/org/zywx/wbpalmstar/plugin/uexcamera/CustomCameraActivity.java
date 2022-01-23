@@ -57,7 +57,6 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
-import java.lang.reflect.Method;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -330,7 +329,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			}
 		}
 		int rotation = getRotate();
-		Log.i("TAG","onOrientationChanged orientation: " + orientation);
+		Log.i(TAG,"onOrientationChanged orientation: " + orientation);
+		Log.i(TAG,"onOrientationChanged getRotate: " + rotation);
 		if (null != mCamera) {
 			Camera.Parameters parameters = mCamera.getParameters();
 			parameters.setRotation(rotation);
@@ -504,14 +504,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	}
 
 	private void setDisplayOrientation(Camera camera, int angle) {
-		Method downPolymorphic;
-		try {
-			downPolymorphic = camera.getClass().getMethod("setDisplayOrientation", new Class[] { int.class });
-			if (downPolymorphic != null) {
-				downPolymorphic.invoke(camera, new Object[] { angle });
-			}
-		} catch (Exception e1) {
-		}
+		camera.setDisplayOrientation(angle);
 	}
 
 	@SuppressWarnings("unused")

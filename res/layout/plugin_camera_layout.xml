@@ -56,12 +56,12 @@
 
         <Button
             android:id="@+id/plugin_camera_bt_flash1"
-            android:layout_width="56dp"
-            android:layout_height="42dp"
+            android:layout_width="72dp"
+            android:layout_height="36dp"
             android:layout_alignParentLeft="true"
             android:layout_alignParentTop="true"
-            android:layout_marginLeft="15dp"
-            android:layout_marginTop="15dp"
+            android:layout_marginLeft="18dp"
+            android:layout_marginTop="42dp"
             android:background="@drawable/plugin_camera_flash_auto_selector" />
 
         <LinearLayout
@@ -72,18 +72,18 @@
 
             <Button
                 android:id="@+id/plugin_camera_bt_flash2"
-                android:layout_width="56dp"
-                android:layout_height="42dp"
-                android:layout_marginLeft="15dp"
-                android:layout_marginTop="15dp"
+                android:layout_width="72dp"
+                android:layout_height="36dp"
+                android:layout_marginLeft="18dp"
+                android:layout_marginTop="42dp"
                 android:background="@drawable/plugin_camera_flash_open_selector" />
 
             <Button
                 android:id="@+id/plugin_camera_bt_flash3"
-                android:layout_width="56dp"
-                android:layout_height="42dp"
-                android:layout_marginLeft="15dp"
-                android:layout_marginTop="15dp"
+                android:layout_width="72dp"
+                android:layout_height="36dp"
+                android:layout_marginLeft="18dp"
+                android:layout_marginTop="42dp"
                 android:background="@drawable/plugin_camera_flash_close_selector" />
         </LinearLayout>
 
@@ -102,9 +102,12 @@
             android:id="@+id/plugin_camera_bt_changefacing"
             android:layout_width="56dp"
             android:layout_height="42dp"
-            android:layout_alignParentRight="true"
             android:layout_alignParentTop="true"
-            android:layout_margin="15dp"
+            android:layout_alignParentRight="true"
+            android:layout_marginStart="15dp"
+            android:layout_marginTop="38dp"
+            android:layout_marginEnd="15dp"
+            android:layout_marginBottom="15dp"
             android:background="@drawable/plugin_camera_bt_changefacing_selector" />
     </RelativeLayout>
 
