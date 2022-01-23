@@ -10,9 +10,18 @@ import android.os.Parcelable;
  */
 
 public class WatermarkOptionsVO implements Parcelable {
+
+    public final static String POSITION_CENTER = "center";
+    public final static String POSITION_LEFT_TOP = "left-top";
+    public final static String POSITION_RIGHT_TOP = "right-top";
+    public final static String POSITION_LEFT_BOTTOM = "left-bottom";
+    public final static String POSITION_RIGHT_BOTTOM = "right-bottom";
+
     private int paddingY;
     private int paddingX;
-    private String position;
+    private String color = "#FFFFFF";
+    private int size = 32;
+    private String position = POSITION_CENTER;
     private String markImage;
     private String markText;
 
@@ -30,6 +39,22 @@ public class WatermarkOptionsVO implements Parcelable {
 
     public void setPaddingX(int paddingX) {
         this.paddingX = paddingX;
+    }
+
+    public String getColor() {
+        return color;
+    }
+
+    public void setColor(String color) {
+        this.color = color;
+    }
+
+    public int getSize() {
+        return size;
+    }
+
+    public void setSize(int size) {
+        this.size = size;
     }
 
     public String getPosition() {

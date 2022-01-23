@@ -9,6 +9,7 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Rect;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;
@@ -45,8 +46,10 @@ import android.widget.ImageView.ScaleType;
 import android.widget.Toast;
 
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.ImageWatermarkUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenInternalVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.PhotoSizeVO;
+import org.zywx.wbpalmstar.plugin.uexcamera.vo.WatermarkOptionsVO;
 
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
@@ -673,6 +676,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		if (!(openInternalVO == null
 				|| openInternalVO.getCompressOptions() == null
 				|| openInternalVO.getCompressOptions().getIsCompress() == 0)) {
+			Log.i(TAG, "saveImage: starting to handle Compress...");
 			Bitmap bm = null;
 			int quality = 100;
 			// 开启压缩
@@ -704,39 +708,95 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			}
 			try {
 				if (bm != null) {
-//					bm = Util.rotate(bm, getRotate());
-					BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(pictureFile));
-					bm.compress(Bitmap.CompressFormat.JPEG, quality, bos);
-					bos.flush();
-					bos.close();
-
-					ByteArrayOutputStream baos = new ByteArrayOutputStream();
-					bm.compress(Bitmap.CompressFormat.JPEG, quality, baos);
+					// 开始处理水印
+					Log.i(TAG, "saveImage(compress): starting to handle WaterMark...");
+					Bitmap result = handleWatermark(bm);
+					if (result == null) {
+						Log.i(TAG, "saveImage(compress): no need to handle WaterMark...");
+						result = bm;
+					} else {
+						Log.i(TAG, "saveImage(compress): handle WaterMark finished...");
+					}
+					// 处理水印结束，开始写入文件
+					BufferedOutputStream bos = null;
+					try {
+						bos = new BufferedOutputStream(new FileOutputStream(pictureFile));
+						result.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+						bos.flush();
+					} catch (IOException e) {
+						Log.e(TAG, "AppCan Camera Watermark", e);
+					} finally {
+						if (bos != null) {
+							try {
+								bos.close();
+							} catch (IOException e) {
+								e.printStackTrace();
+							}
+						}
+					}
+					// 如果需要存入相册，则需要转为byte数组存起来，后面备用
+					if (isNeedToUpdateAlbum()) {
+						ByteArrayOutputStream baos = new ByteArrayOutputStream();
+						result.compress(Bitmap.CompressFormat.JPEG, quality, baos);
+						// 用完后立即置null，防止内存占用过多
+						mPictureBytesData = null;
 //					Runtime.getRuntime().gc();
-					mPictureBytesData = null;
-					data = baos.toByteArray();
-					mPictureBytesData = data;
+						data = baos.toByteArray();
+					}
+				} else {
+					Log.e(TAG, "compressed bitmap is null!!!");
 				}
 				// 图片文件以JPEG格式写入本地完毕
 			} catch (Exception e) {
-				e.printStackTrace();
+				Log.e(TAG, "AppCan Camera Compress", e);
 			}
 		} else {
-			// 无压缩，正常保存
-			Log.i(TAG, "不进行压缩，正常保存： " + pictureFile);
-			try {
-				FileOutputStream fos = new FileOutputStream(pictureFile);
-				fos.write(data);
-				fos.close();
-			} catch (Exception e) {
-				e.printStackTrace();
-				Log.e(TAG,"saveImage 照片存储失败");
+			Log.i(TAG, "saveImage(no compress): starting to handle WaterMark...");
+			// 开始处理水印
+			Bitmap result = handleWatermark(data);
+			if (result != null) {
+				BufferedOutputStream bos = null;
+				try {
+					bos = new BufferedOutputStream(new FileOutputStream(pictureFile));
+					result.compress(Bitmap.CompressFormat.JPEG, 100, bos);
+					bos.flush();
+				} catch (IOException e) {
+					Log.e(TAG, "AppCan Camera Watermark", e);
+				} finally {
+					if (bos != null) {
+						try {
+							bos.close();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+				}
+				// 如果需要存入相册，则需要转为byte数组存起来，后面备用
+				if (isNeedToUpdateAlbum()) {
+					ByteArrayOutputStream baos = new ByteArrayOutputStream();
+					result.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+					// 用完后立即置null，防止内存占用过多
+					mPictureBytesData = null;
+//					Runtime.getRuntime().gc();
+					data = baos.toByteArray();
+				}
+			} else {
+				// 无压缩，无水印，正常保存
+				Log.i(TAG, "不进行压缩，不处理水印，正常保存： " + pictureFile);
+				// 用完后立即置null，防止内存占用过多
+				mPictureBytesData = null;
+				try {
+					FileOutputStream fos = new FileOutputStream(pictureFile);
+					fos.write(data);
+					fos.close();
+				} catch (Exception e) {
+					Log.e(TAG,"saveImage 照片存储失败", e);
+				}
 			}
 		}
+
 		// 根据参数处理将图片保存在应用内部还是保存在相册中
-		if (openInternalVO != null
-				&& openInternalVO.getStorageOptions() != null
-				&& "1".equals(openInternalVO.getStorageOptions().getIsPublic())) {
+		if (isNeedToUpdateAlbum()) {
 			// 开启了公共存储，需要将图片写入相册
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
 				updateAlbum(data, pictureFile.getName());
@@ -748,6 +808,51 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			// 关闭了公共存储，故不需要更新到相册
 			Log.i(TAG, "storageOptions isPublic is 0, no need to updateAlbum");
 		}
+	}
+
+	private boolean isNeedToUpdateAlbum() {
+		return openInternalVO != null
+			&& openInternalVO.getStorageOptions() != null
+			&& "1".equals(openInternalVO.getStorageOptions().getIsPublic());
+	}
+
+	private Bitmap handleWatermark(byte[] data) {
+		BitmapFactory.Options options = new BitmapFactory.Options();
+		Bitmap sourceBitmap = BitmapFactory.decodeByteArray(data, 0, data.length, options);
+		return handleWatermark(sourceBitmap);
+	}
+
+	private Bitmap handleWatermark(Bitmap sourceBitmap) {
+		Bitmap result = null;
+		WatermarkOptionsVO watermarkOptionsVO = openInternalVO.getWatermarkOptions();
+		if (watermarkOptionsVO != null) {
+			if (WatermarkOptionsVO.POSITION_LEFT_TOP.equals(watermarkOptionsVO.getPosition())) {
+				result = ImageWatermarkUtil.drawTextToLeftTop(CustomCameraActivity.this,
+						sourceBitmap, watermarkOptionsVO.getMarkText(),
+						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()),
+						watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY());
+			} else if (WatermarkOptionsVO.POSITION_RIGHT_TOP.equals(watermarkOptionsVO.getPosition())) {
+				result = ImageWatermarkUtil.drawTextToRightTop(CustomCameraActivity.this,
+						sourceBitmap, watermarkOptionsVO.getMarkText(),
+						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()),
+						watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY());
+			} else if (WatermarkOptionsVO.POSITION_LEFT_BOTTOM.equals(watermarkOptionsVO.getPosition())) {
+				result = ImageWatermarkUtil.drawTextToLeftBottom(CustomCameraActivity.this,
+						sourceBitmap, watermarkOptionsVO.getMarkText(),
+						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()),
+						watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY());
+			} else if (WatermarkOptionsVO.POSITION_RIGHT_BOTTOM.equals(watermarkOptionsVO.getPosition())) {
+				result = ImageWatermarkUtil.drawTextToRightBottom(CustomCameraActivity.this,
+						sourceBitmap, watermarkOptionsVO.getMarkText(),
+						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()),
+						watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY());
+			} else {
+				result = ImageWatermarkUtil.drawTextToCenter(CustomCameraActivity.this,
+						sourceBitmap, watermarkOptionsVO.getMarkText(),
+						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()));
+			}
+		}
+		return result;
 	}
 
 	/**
