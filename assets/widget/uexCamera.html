@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html class="um landscape min-width-240px min-width-320px min-width-480px min-width-768px min-width-1024px">
+    
+    <head>
+        <title>
+        </title>
+        <meta charset="utf-8">
+        <meta name="viewport" content="target-densitydpi=device-dpi, width=device-width, initial-scale=1, user-scalable=no, minimum-scale=1.0, maximum-scale=1.0">
+        <link rel="stylesheet" href="css/fonts/font-awesome.min.css">
+        <link rel="stylesheet" href="css/ui-box.css">
+        <link rel="stylesheet" href="css/ui-base.css">
+        <link rel="stylesheet" href="css/ui-color.css">
+        <link rel="stylesheet" href="css/appcan.icon.css">
+        <link rel="stylesheet" href="css/appcan.control.css">
+        <link rel="stylesheet" href="./css/index.css">
+        <script src="js/eruda.min.js"></script>
+        <script src="./js/index.js">
+        </script>
+    </head>
+    
+    <body class="" ontouchstart>
+        <div class="bc-bg" tabindex="0" data-control="PAGE" id="Page_ylUCGd">
+            <div class="uh bc-head  ubb bc-border" data-control="HEADER" id="Header_bPMcMr">
+                <div class="ub">
+                    <div class="nav-btn" id="nav-left">
+                        <div class="fa fa-1g ub-img1">
+                        </div>
+                    </div>
+                    <h1 class="ut ub-f1 ulev-3 ut-s tx-c" tabindex="0">测试系统</h1>
+                    <div class="nav-btn" id="nav-right">
+                        <div class="fa  fa-1g  ub-img1">
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="btncss" data-control="BOX">
+                <div class="button ub ub-ac bc-text-head ub-pc bc-btn" id="uexCamera1" onclick='uexCameraCase.openInternalWithJson()'>打开自定义相机</div>
+                <div class="button ub ub-ac bc-text-head ub-pc bc-btn" id="uexCamera2" onclick='uexCameraCase.openInternalWithJsonWithCompress()'>打开自定义相机（需要压缩图片）</div>
+                <div class="button ub ub-ac bc-text-head ub-pc bc-btn" id="uexCamera3" onclick='uexCameraCase.openInternalWithJsonWithWatermark()'>打开自定义相机（需要增加水印）</div>
+            </div>
+        </div>
+        <script src="js/appcan.js">
+        </script>
+        <script src="js/appcan.control.js">
+        </script>
+        <script src="js/appcan.scrollbox.js">
+        </script>
+        <script src="js/template.import.js">
+        </script>
+        <script src="./assets/mvvm/index.js">
+        </script>
+        <script>
+            var UNIT_TEST = {
+                "log": function(content) {
+                    console.log('UNIT_TEST: ' + content)
+                },
+                "assert": function(result) {
+                    alert("执行是否成功：" + result)
+                }
+            }
+            var uexCameraCase = {
+                "registerOnPermissionDenied":function(){
+                    uexCamera.onPermissionDenied = function(data){
+                        alert('uexCamera.onPermissionDenied')
+                    }
+                },
+                "open":function(){
+                    var compress = '0';
+                    var quality = '100';
+                    uexCamera.open(compress, quality, function(savePath) {
+                        if(savePath){
+                          UNIT_TEST.log(savePath);
+                          UNIT_TEST.assert(true);
+                        }else{
+                          UNIT_TEST.assert(false);
+                        }
+                    });
+                },
+                "openInternal":function(){
+                    var compress = '1';
+                    var quality = '100';
+                    uexCamera.openInternal(compress, quality, function(savePath) {
+                        console.log("openInternal: savePath=" + savePath);
+                        if(savePath){
+                           console.log(savePath);
+                           alert("执行结果：" + savePath);
+                       }else{
+                           alert("执行失败：" + savePath);
+                        }
+                    });
+                },
+                "openInternalWithJson":function(){
+                    var options = {
+                        storageOptions: {
+                            isPublic: "1"
+                        }
+                    }
+                    uexCamera.openInternal(options, function(savePath) {
+                        console.log("openInternalWithJson: savePath=" + savePath);
+                        if(savePath){
+                           console.log(savePath);
+                           alert("执行结果：" + savePath);
+                       }else{
+                           alert("执行失败：" + savePath);
+                        }
+                    });
+                },
+                "openInternalWithJsonWithCompress":function(){
+                    var options = {
+                        compressOptions: {
+                            isCompress: 3,
+                            quality: 100,
+                            photoSize: {
+                                width: 1080,
+                                height: 1920
+                            },
+                            fileSize: 100*1024
+                        },
+                        storageOptions: {
+                            isPublic: "1"
+                        }
+                    }
+                    uexCamera.openInternal(options, function(savePath) {
+                        console.log("openInternalWithJson: savePath=" + savePath);
+                        if(savePath){
+                           console.log(savePath);
+                           alert("执行结果：" + savePath);
+                       }else{
+                           alert("执行失败：" + savePath);
+                        }
+                    });
+                },
+                "openInternalWithJsonWithWatermark":function(){
+                    var options = {
+                        watermarkOptions: {
+                            markText: "测试水印显示",
+                            markImage: "",
+                            position: "right-bottom",
+                            paddingX: 100,
+                            paddingY: 100
+                        },
+                        storageOptions: {
+                            isPublic: "1"
+                        }
+                    }
+                    uexCamera.openInternal(options, function(savePath) {
+                        console.log("openInternalWithJson: savePath=" + savePath);
+                        if(savePath){
+                           console.log(savePath);
+                           alert("执行结果：" + savePath);
+                       }else{
+                           alert("执行失败：" + savePath);
+                        }
+                    });
+                },
+                "openViewCamera":function(){
+                    if(uexWidgetOne.platformName.toLowerCase().indexOf('android') > -1){
+                        size = 800
+                    }else{
+                        size = 200;
+                    }
+                    UNIT_TEST.log(uexWidgetOne.platformName);
+                    UNIT_TEST.log("size:" + size);
+                    uexCamera.openViewCamera(0, 0, size, size,"奥格瑞玛",100, function(data){
+                        if(data){
+                             UNIT_TEST.log(JSON.stringify(data));
+                             UNIT_TEST.assert(true);
+                        }else{
+                             UNIT_TEST.assert(false);
+                            }
+                        });
+                },
+                "changeCameraPosition":function(){
+                    uexCamera.openViewCamera(10, 0, size, size,"奥格瑞玛",100, function(data){
+                                             });
+                    var position = uexCamera.changeCameraPosition(0);
+                    if(position != -1){
+                        UNIT_TEST.log(position);
+                        UNIT_TEST.assert(true);
+                    }else{
+                        UNIT_TEST.assert(false);
+                    }
+                    uexCamera.removeViewCameraFromWindow();
+                },
+                "changeCameraPosition":function(){
+                    uexCamera.openViewCamera(50, 200, size, size,"奥格瑞玛",100,function(data){
+
+                    });
+                    setTimeout(function(){
+                        var position = uexCamera.changeCameraPosition(1);
+                        if(position == 1){
+                            UNIT_TEST.log("设置摄像头前置成功:position = "+position);
+                            UNIT_TEST.assert(true);
+                        }else{
+                            UNIT_TEST.log("设置摄像头前置失败:position != "+position);
+                            UNIT_TEST.assert(false);
+                        }
+                    },1000)
+                    setTimeout(function(){
+                               var position = uexCamera.changeCameraPosition(0);
+                               if(position == 0){
+                               UNIT_TEST.log("设置摄像头后置成功:position = "+position);
+                               UNIT_TEST.assert(true);
+                               }else{
+                               UNIT_TEST.log("设置摄像头后置失败");
+                               UNIT_TEST.assert(false);
+                               }
+                               },1000)
+
+                },
+                "changeFlashMode":function(){
+                               var mode = uexCamera.changeFlashMode(1);
+                               if(mode == 1){
+                                 UNIT_TEST.log("打开闪光灯成功:mode = "+mode);
+                                 UNIT_TEST.assert(true);
+                               }else{
+                                 UNIT_TEST.log("打开闪光灯成功失败");
+                                 UNIT_TEST.assert(false);
+                               }
+                },
+                "removeViewCameraFromWindow":function(){
+                        uexCamera.removeViewCameraFromWindow();
+                        UNIT_TEST.log("关闭自定义View照相机");
+                        UNIT_TEST.assert(true);
+
+                }
+            }
+
+            function openInternalCamera() {
+                uexCameraCase.openInternalWithJson()
+            }
+        </script>
+
+    </body>
+
+</html>
