@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="4.3.14.2" build="2022012301">
-        <info>14.2:自定义相机增加了水印配置的处理，优化部分UI</info>
+        uexName="uexCamera" version="4.3.14.3" build="2022013001">
+        <info>14.3:自定义相机修复部分设备照片方向错误的问题</info>
+        <build>14.2:自定义相机增加了水印配置的处理，优化部分UI</build>
         <build>14.1:自定义相机增加存储配置项以及压缩配置项的处理</build>
         <build>14:优化自定义相机的清晰度问题，以及性能问题</build>
         <build>13.1:处理了openInternal可能导致的闪退问题</build>
