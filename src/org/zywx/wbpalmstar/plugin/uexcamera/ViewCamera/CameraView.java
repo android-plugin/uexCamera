@@ -42,6 +42,7 @@ import android.widget.TextView;
 import android.widget.Toast;
 
 import org.zywx.wbpalmstar.engine.universalex.EUExUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.Constant;
 import org.zywx.wbpalmstar.plugin.uexcamera.EUExCamera;
 import org.zywx.wbpalmstar.plugin.uexcamera.LogUtils;
 import org.zywx.wbpalmstar.plugin.uexcamera.Util;
@@ -150,7 +151,7 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 					intent.putExtra("label", tvLabel.getText().toString());
 					intent.putExtra("fileName", fileName);
 					if (mEuExCamera != null) {
-						mEuExCamera.startActivityForResult(intent, 68);
+						mEuExCamera.startActivityForResult(intent, Constant.REQUEST_CODE_INTERNAL_VIEW_CAMERA);
 					} else {
 						Toast.makeText(mContext, "跳转失败！", Toast.LENGTH_SHORT).show();
 					}

@@ -120,7 +120,7 @@ public class ImageWatermarkUtil {
      * @param text
      * @return
      */
-    public static Bitmap drawTextToLeftTop(Context context, Bitmap bitmap, String text, int size, int color, int paddingLeft, int paddingTop) {
+    public static Bitmap drawTextToLeftTop(Context context, Bitmap bitmap, String text, int size, int color, int paddingLeft, int paddingTop, int degree) {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(color);
         paint.setTextSize(dp2px(context, size));
@@ -128,7 +128,7 @@ public class ImageWatermarkUtil {
         paint.getTextBounds(text, 0, text.length(), bounds);
         return drawTextToBitmap(context, bitmap, text, paint, bounds,
                 dp2px(context, paddingLeft),
-                dp2px(context, paddingTop) + bounds.height());
+                dp2px(context, paddingTop) + bounds.height(), degree);
     }
 
     /**
@@ -141,7 +141,7 @@ public class ImageWatermarkUtil {
      * @param color
      * @return
      */
-    public static Bitmap drawTextToRightBottom(Context context, Bitmap bitmap, String text, int size, int color, int paddingRight, int paddingBottom) {
+    public static Bitmap drawTextToRightBottom(Context context, Bitmap bitmap, String text, int size, int color, int paddingRight, int paddingBottom, int degree) {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(color);
         paint.setTextSize(dp2px(context, size));
@@ -149,7 +149,7 @@ public class ImageWatermarkUtil {
         paint.getTextBounds(text, 0, text.length(), bounds);
         return drawTextToBitmap(context, bitmap, text, paint, bounds,
                 bitmap.getWidth() - bounds.width() - dp2px(context, paddingRight),
-                bitmap.getHeight() - dp2px(context, paddingBottom));
+                bitmap.getHeight() - dp2px(context, paddingBottom), degree);
     }
 
     /**
@@ -164,7 +164,7 @@ public class ImageWatermarkUtil {
      * @param paddingTop
      * @return
      */
-    public static Bitmap drawTextToRightTop(Context context, Bitmap bitmap, String text, int size, int color, int paddingRight, int paddingTop) {
+    public static Bitmap drawTextToRightTop(Context context, Bitmap bitmap, String text, int size, int color, int paddingRight, int paddingTop, int degree) {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(color);
         paint.setTextSize(dp2px(context, size));
@@ -172,7 +172,7 @@ public class ImageWatermarkUtil {
         paint.getTextBounds(text, 0, text.length(), bounds);
         return drawTextToBitmap(context, bitmap, text, paint, bounds,
                 bitmap.getWidth() - bounds.width() - dp2px(context, paddingRight),
-                dp2px(context, paddingTop) + bounds.height());
+                dp2px(context, paddingTop) + bounds.height(), degree);
     }
 
     /**
@@ -187,7 +187,7 @@ public class ImageWatermarkUtil {
      * @param paddingBottom
      * @return
      */
-    public static Bitmap drawTextToLeftBottom(Context context, Bitmap bitmap, String text, int size, int color, int paddingLeft, int paddingBottom) {
+    public static Bitmap drawTextToLeftBottom(Context context, Bitmap bitmap, String text, int size, int color, int paddingLeft, int paddingBottom, int degree) {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(color);
         paint.setTextSize(dp2px(context, size));
@@ -195,7 +195,7 @@ public class ImageWatermarkUtil {
         paint.getTextBounds(text, 0, text.length(), bounds);
         return drawTextToBitmap(context, bitmap, text, paint, bounds,
                 dp2px(context, paddingLeft),
-                bitmap.getHeight() - dp2px(context, paddingBottom));
+                bitmap.getHeight() - dp2px(context, paddingBottom), degree);
     }
 
     /**
@@ -208,7 +208,7 @@ public class ImageWatermarkUtil {
      * @param color
      * @return
      */
-    public static Bitmap drawTextToCenter(Context context, Bitmap bitmap, String text, int size, int color) {
+    public static Bitmap drawTextToCenter(Context context, Bitmap bitmap, String text, int size, int color, int degree) {
         Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setColor(color);
         paint.setTextSize(dp2px(context, size));
@@ -216,11 +216,11 @@ public class ImageWatermarkUtil {
         paint.getTextBounds(text, 0, text.length(), bounds);
         return drawTextToBitmap(context, bitmap, text, paint, bounds,
                 (bitmap.getWidth() - bounds.width()) / 2,
-                (bitmap.getHeight() + bounds.height()) / 2);
+                (bitmap.getHeight() + bounds.height()) / 2, degree);
     }
 
     //图片上绘制文字
-    private static Bitmap drawTextToBitmap(Context context, Bitmap bitmap, String text, Paint paint, Rect bounds, int paddingLeft, int paddingTop) {
+    private static Bitmap drawTextToBitmap(Context context, Bitmap bitmap, String text, Paint paint, Rect bounds, int paddingLeft, int paddingTop, int degree) {
         android.graphics.Bitmap.Config bitmapConfig = bitmap.getConfig();
 
         paint.setDither(true); // 获取跟清晰的图像采样
@@ -230,8 +230,9 @@ public class ImageWatermarkUtil {
         }
         bitmap = bitmap.copy(bitmapConfig, true);
         Canvas canvas = new Canvas(bitmap);
-
+        canvas.rotate(-degree, paddingLeft, paddingTop);
         canvas.drawText(text, paddingLeft, paddingTop, paint);
+        canvas.rotate(degree, paddingLeft, paddingTop);
         return bitmap;
     }
 

@@ -16,6 +16,7 @@ import android.hardware.Camera.AutoFocusCallback;
 import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.PictureCallback;
+import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -46,7 +47,10 @@ import android.widget.ImageView.ScaleType;
 import android.widget.Toast;
 
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.ExifUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.FileUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.ImageWatermarkUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.MLog;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenInternalVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.PhotoSizeVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.WatermarkOptionsVO;
@@ -232,10 +236,14 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			}
 		});
 		mBtnHandler.setOnClickListener(new OnClickListener() {
+
+			private boolean isRunning = false;
+
 			@Override
 			public void onClick(View v) {
 				// TODO 增加显示进度提示框等待
-				if (isHasPic) {
+				if (isHasPic && !isRunning) {
+					isRunning = true;
 					mExecutorService.submit(new Runnable() {
 						@Override
 						public void run() {
@@ -250,6 +258,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 									setResult(RESULT_OK);
 									onPause();
 									finish();
+									isRunning = false;
 								}
 							});
 						}
@@ -639,6 +648,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	}
 
 	public Bitmap createThumbnail(byte[] data) {
+		ExifInterface originExif = ExifUtil.getExifInfo(data);
+		int degree = ExifUtil.getExifOrientationDegree(originExif);
 		Bitmap bm = null;
 		try {
 			int width = mCamera.getParameters().getPictureSize().width;
@@ -648,9 +659,9 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			BitmapFactory.Options options = new BitmapFactory.Options();
 			options.inSampleSize = inSampleSize;
 			bm = BitmapFactory.decodeByteArray(data, 0, data.length, options);
-//			bm = rotateImage(bm);
+			bm = BitmapUtil.rotate(bm, degree);
 		} catch (Exception e) {
-			e.printStackTrace();
+			Log.w(TAG, "createThumbnail exception", e);
 		}
 		return bm;
 	}
@@ -666,6 +677,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				e.printStackTrace();
 			}
 		}
+		ExifInterface originExif = ExifUtil.getExifInfo(data);
 		if (!(openInternalVO == null
 				|| openInternalVO.getCompressOptions() == null
 				|| openInternalVO.getCompressOptions().getIsCompress() == 0)) {
@@ -703,7 +715,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				if (bm != null) {
 					// 开始处理水印
 					Log.i(TAG, "saveImage(compress): starting to handle WaterMark...");
-					Bitmap result = handleWatermark(bm);
+					Bitmap result = handleWatermark(bm, originExif);
 					if (result == null) {
 						Log.i(TAG, "saveImage(compress): no need to handle WaterMark...");
 						result = bm;
@@ -746,7 +758,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		} else {
 			Log.i(TAG, "saveImage(no compress): starting to handle WaterMark...");
 			// 开始处理水印
-			Bitmap result = handleWatermark(data);
+			Bitmap result = handleWatermark(data, originExif);
 			if (result != null) {
 				BufferedOutputStream bos = null;
 				try {
@@ -788,6 +800,17 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			}
 		}
 
+		if (ExifUtil.getExifOrientationDegree(originExif) != 0) {
+			MLog.getIns().i(TAG + "getExifOrientationDegree is not 0 degree, need to handle exif orientation");
+			try {
+				ExifInterface exifOutput = new ExifInterface(pictureFile.getAbsolutePath());
+				ExifUtil.copyExifOrientation(originExif, exifOutput);
+				data = FileUtil.getByteArrayFromFile(pictureFile);
+			} catch (Exception e) {
+				Log.e(TAG, "saveImage", e);
+			}
+		}
+
 		// 根据参数处理将图片保存在应用内部还是保存在相册中
 		if (isNeedToUpdateAlbum()) {
 			// 开启了公共存储，需要将图片写入相册
@@ -809,13 +832,14 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			&& "1".equals(openInternalVO.getStorageOptions().getIsPublic());
 	}
 
-	private Bitmap handleWatermark(byte[] data) {
+	private Bitmap handleWatermark(byte[] data, ExifInterface originExif) {
 		BitmapFactory.Options options = new BitmapFactory.Options();
 		Bitmap sourceBitmap = BitmapFactory.decodeByteArray(data, 0, data.length, options);
-		return handleWatermark(sourceBitmap);
+		return handleWatermark(sourceBitmap, originExif);
 	}
 
-	private Bitmap handleWatermark(Bitmap sourceBitmap) {
+	private Bitmap handleWatermark(Bitmap sourceBitmap, ExifInterface originExif) {
+		int degree = ExifUtil.getExifOrientationDegree(originExif);
 		Bitmap result = null;
 		WatermarkOptionsVO watermarkOptionsVO = openInternalVO.getWatermarkOptions();
 		if (watermarkOptionsVO != null) {
@@ -823,26 +847,26 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				result = ImageWatermarkUtil.drawTextToLeftTop(CustomCameraActivity.this,
 						sourceBitmap, watermarkOptionsVO.getMarkText(),
 						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()),
-						watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY());
+						watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY(), degree);
 			} else if (WatermarkOptionsVO.POSITION_RIGHT_TOP.equals(watermarkOptionsVO.getPosition())) {
 				result = ImageWatermarkUtil.drawTextToRightTop(CustomCameraActivity.this,
 						sourceBitmap, watermarkOptionsVO.getMarkText(),
 						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()),
-						watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY());
+						watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY(), degree);
 			} else if (WatermarkOptionsVO.POSITION_LEFT_BOTTOM.equals(watermarkOptionsVO.getPosition())) {
 				result = ImageWatermarkUtil.drawTextToLeftBottom(CustomCameraActivity.this,
 						sourceBitmap, watermarkOptionsVO.getMarkText(),
 						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()),
-						watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY());
+						watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY(), degree);
 			} else if (WatermarkOptionsVO.POSITION_RIGHT_BOTTOM.equals(watermarkOptionsVO.getPosition())) {
 				result = ImageWatermarkUtil.drawTextToRightBottom(CustomCameraActivity.this,
 						sourceBitmap, watermarkOptionsVO.getMarkText(),
 						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()),
-						watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY());
+						watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY(), degree);
 			} else {
 				result = ImageWatermarkUtil.drawTextToCenter(CustomCameraActivity.this,
 						sourceBitmap, watermarkOptionsVO.getMarkText(),
-						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()));
+						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()), degree);
 			}
 		}
 		return result;

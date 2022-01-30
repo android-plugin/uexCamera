@@ -800,64 +800,68 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                     return;
                 }
             } else if (requestCode == Constant.REQUEST_CODE_INTERNAL_CAMERA) {
-                if (null != data)
-                    ;
                 finalPath = mTempPath.getAbsolutePath();
-                if (finalPath != null) {
-                    try {
-                        exif = new ExifInterface(finalPath);
-                        int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, -1);
-                        if (orientation != -1) {
-                            switch (orientation) {
-                                case ExifInterface.ORIENTATION_NORMAL:
-                                    degree = 0;
-                                    break;
-                                case ExifInterface.ORIENTATION_ROTATE_90:
-                                    degree = 90;
-                                    break;
-                                case ExifInterface.ORIENTATION_ROTATE_180:
-                                    degree = 180;
-                                    break;
-                                case ExifInterface.ORIENTATION_ROTATE_270:
-                                    degree = 270;
-                                    break;
-                            }
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    if (mTempPath != null && !mTempPath.exists()){
-                        BDebug.e(TAG, "openInternal Camera mTempPath is not exist: " + mTempPath.getAbsolutePath());
-                    }
-
-                    if (!mIsCompress && 0 == degree) {
-                        if (TextUtils.isEmpty(openInternalFunc)) {
-                            jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
-                        } else {
-                            callbackToJs(Integer.parseInt(openInternalFunc), false, finalPath);
-                        }
-                    } else {
-                        String tPath = makePicture(new File(finalPath), degree);
-                        if (null == tPath) {
-                            errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
-                        } else {
-                            if (TextUtils.isEmpty(openInternalFunc)) {
-                                jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, tPath);
-                            } else {
-                                callbackToJs(Integer.parseInt(openInternalFunc), false, tPath);
-                            }
+                try {
+                    exif = new ExifInterface(finalPath);
+                    int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, -1);
+                    MLog.getIns().i("ExifInterface Orientation: " + orientation);
+                    if (orientation != -1) {
+                        switch (orientation) {
+                            case ExifInterface.ORIENTATION_NORMAL:
+                                degree = 0;
+                                break;
+                            case ExifInterface.ORIENTATION_ROTATE_90:
+                                degree = 90;
+                                break;
+                            case ExifInterface.ORIENTATION_ROTATE_180:
+                                degree = 180;
+                                break;
+                            case ExifInterface.ORIENTATION_ROTATE_270:
+                                degree = 270;
+                                break;
                         }
                     }
+                    MLog.getIns().i("ExifInterface degree: " + degree);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-            } else if (requestCode == 68) {
+
+                if (mTempPath != null && !mTempPath.exists()){
+                    BDebug.e(TAG, "openInternal Camera mTempPath is not exist: " + mTempPath.getAbsolutePath());
+                }
+
+                if (TextUtils.isEmpty(openInternalFunc)) {
+                    jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
+                } else {
+                    callbackToJs(Integer.parseInt(openInternalFunc), false, finalPath);
+                }
+
+//                if (!mIsCompress && 0 == degree) {
+//                    if (TextUtils.isEmpty(openInternalFunc)) {
+//                        jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
+//                    } else {
+//                        callbackToJs(Integer.parseInt(openInternalFunc), false, finalPath);
+//                    }
+//                } else {
+//                    String tPath = makePicture(new File(finalPath), degree);
+//                    if (null == tPath) {
+//                        errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
+//                    } else {
+//                        if (TextUtils.isEmpty(openInternalFunc)) {
+//                            jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, tPath);
+//                        } else {
+//                            callbackToJs(Integer.parseInt(openInternalFunc), false, tPath);
+//                        }
+//                    }
+//                }
+            } else if (requestCode == Constant.REQUEST_CODE_INTERNAL_VIEW_CAMERA) {
                 MLog.getIns().i("requestCode = " + requestCode);
                 String photoPath = data.getStringExtra("photoPath");
                 closeViewAndCallback(photoPath);
             }
         } else if (resultCode == Activity.RESULT_CANCELED) {// 如果是取消标志 change by
             // waka 2016-01-28
-            if (requestCode == 68) {// 如果是SecondActivity传回来的取消标记
+            if (requestCode == Constant.REQUEST_CODE_INTERNAL_VIEW_CAMERA) {// 如果是SecondActivity传回来的取消标记
                 mCameraView.setCameraTakingPhoto(false);// 设置正在照相标记为false
             }else if (requestCode == Constant.REQUEST_CODE_SYSTEM_CAMERA){
                 // 打开系统相机后取消操作
