@@ -800,6 +800,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			}
 		}
 
+		// 如果原图存在exif，则需要重新写入exif防止图片方向错误（压缩后exif会丢失，故需要重新写入）
 		if (ExifUtil.getExifOrientationDegree(originExif) != 0) {
 			MLog.getIns().i(TAG + "getExifOrientationDegree is not 0 degree, need to handle exif orientation");
 			try {

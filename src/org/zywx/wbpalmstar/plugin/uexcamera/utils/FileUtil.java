@@ -52,6 +52,23 @@ public class FileUtil {
 		return true;
 	}
 
+	/**
+	 * 检查文件路径是否存在
+	 *
+	 * @param filePath
+	 * @return 返回创建结果
+	 */
+	public static boolean checkFilePath(String filePath) {
+		Log.i(TAG, "【checkFilePath】   filePath == " + filePath);
+		File file = new File(filePath);
+		if (!file.exists()) {
+			Log.i(TAG, "【checkFilePath】	file.exists() == false 照片不存在");
+			return file.mkdirs();
+		}
+		Log.i(TAG, "【checkFilePath】	file.exists() == true");
+		return true;
+	}
+
 	public static byte[] getByteArrayFromFile(File file) {
 		FileInputStream fis = null;
 		byte[] result = null;

@@ -41,6 +41,7 @@ import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.FileUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.MLog;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.MemoryUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.PermissionUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.CompressOptionsVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenInternalVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenViewCameraVO;
@@ -122,9 +123,21 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
      * 处理权限申请结果
      */
     private void handleRequestPermissionResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        boolean isPermissionGranted = true;
+        for (int i = 0; i < grantResults.length; i++) {
+            int result = grantResults[i];
+            if (result != PackageManager.PERMISSION_GRANTED) {
+                isPermissionGranted = false;
+                break;
+            }
+            if (!PermissionUtil.isNeedStoragePermission(mTempPath.getAbsolutePath())) {
+                break;
+            }
+        }
+
         switch (requestCode) {
             case REQUSTCAMERACODENOMAL:
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (isPermissionGranted) {
                     openNomalCamera(paramNomal);
                 } else {
                     Toast.makeText(mContext, "为了不影响功能的正常使用,请打开相关权限!", Toast.LENGTH_LONG).show();
@@ -133,7 +146,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                 break;
 
             case REQUSTCAMERACODECUSTOM:
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (isPermissionGranted) {
                     openCustomCamera(paramCustom);
 
                 } else {
@@ -143,7 +156,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                 break;
 
             case REQUSTCAMERACODECUSTOM_VIEW_MODE:
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (isPermissionGranted) {
                     openCustomCamera2(paramCustom2);
                 } else {
                     Toast.makeText(mContext, "为了不影响功能的正常使用,请打开相关权限!", Toast.LENGTH_LONG).show();
@@ -341,10 +354,17 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
      */
     public void openInternal(String[] parm) {
         paramCustom = parm;
-        if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED){
+
+        String outputPath = generateOutputPhotoFilePath();// 获得新的存放目录
+        mTempPath = new File(outputPath);
+
+        if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+                && (!PermissionUtil.isNeedStoragePermission(mTempPath.getAbsolutePath()) || ContextCompat.checkSelfPermission(mContext, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)){
             openCustomCamera(paramCustom);
-        }else{
+        } else if (PermissionUtil.isNeedStoragePermission(mTempPath.getAbsolutePath())){
             requsetPerssionsMore(new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, EUExUtil.getString("plugin_camera_permission_request_hint"), REQUSTCAMERACODECUSTOM);
+        } else {
+            requsetPerssionsMore(new String[]{Manifest.permission.CAMERA}, EUExUtil.getString("plugin_camera_permission_request_hint"), REQUSTCAMERACODECUSTOM);
         }
     }
 
@@ -412,9 +432,6 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
         // 如果SD卡可以工作
         if (BUtility.sdCardIsWork()) {
-
-            String outputPath = generateOutputPhotoFilePath();// 获得新的存放目录
-            mTempPath = new File(outputPath);
             // 如果不存在，创建
             if (!mTempPath.exists()) {
                 try {
@@ -829,6 +846,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                 if (mTempPath != null && !mTempPath.exists()){
                     BDebug.e(TAG, "openInternal Camera mTempPath is not exist: " + mTempPath.getAbsolutePath());
                 }
+
+                FileUtil.checkFilePath(finalPath);
 
                 if (TextUtils.isEmpty(openInternalFunc)) {
                     jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
