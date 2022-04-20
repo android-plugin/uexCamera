@@ -4,7 +4,7 @@ buildscript {
         google()
     }
     dependencies {
-        classpath 'com.android.tools.build:gradle:4.1.2'
+        classpath 'com.android.tools.build:gradle:7.1.2'
     }
 }
 
@@ -14,6 +14,7 @@ repositories {
     flatDir {
         dirs 'libs'
     }
+    jcenter()
     google()
     maven {
         url 'https://raw.githubusercontent.com/android-plugin/mvn-repo/master/'
@@ -24,7 +25,8 @@ dependencies {
     implementation fileTree(dir: 'libs', include: '*.jar')
     //compile(name: 'Engine-system-release-4.0.0', ext: 'aar')//依赖本地引擎
 //    compile 'org.appcan:engine:+:systemRelease@aar'//依赖远程引擎
-    implementation 'org.appcan:engine:4.6.42'
+//    implementation 'org.appcan:engine:4.6.42'
+    implementation 'org.appcan:engine:4.5.30_dev'
 }
 
 android {
