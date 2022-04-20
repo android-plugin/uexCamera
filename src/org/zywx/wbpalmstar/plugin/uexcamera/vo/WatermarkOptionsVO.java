@@ -94,6 +94,8 @@ public class WatermarkOptionsVO implements Parcelable {
         dest.writeString(this.position);
         dest.writeString(this.markImage);
         dest.writeString(this.markText);
+        dest.writeString(this.color);
+        dest.writeInt(this.size);
     }
 
     public void readFromParcel(Parcel source) {
@@ -102,17 +104,15 @@ public class WatermarkOptionsVO implements Parcelable {
         this.position = source.readString();
         this.markImage = source.readString();
         this.markText = source.readString();
+        this.color = source.readString();
+        this.size = source.readInt();
     }
 
     public WatermarkOptionsVO() {
     }
 
     protected WatermarkOptionsVO(Parcel in) {
-        this.paddingY = in.readInt();
-        this.paddingX = in.readInt();
-        this.position = in.readString();
-        this.markImage = in.readString();
-        this.markText = in.readString();
+        readFromParcel(in);
     }
 
     public static final Creator<WatermarkOptionsVO> CREATOR = new Creator<WatermarkOptionsVO>() {

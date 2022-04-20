@@ -713,6 +713,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			}
 			try {
 				if (bm != null) {
+					// 用完后立即置null，防止内存占用过多
+					mPictureBytesData = null;
 					// 开始处理水印
 					Log.i(TAG, "saveImage(compress): starting to handle WaterMark...");
 					Bitmap result = handleWatermark(bm, originExif);
@@ -748,6 +750,9 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 //					Runtime.getRuntime().gc();
 						data = baos.toByteArray();
 					}
+					if (!result.isRecycled()) {
+						result.recycle();
+					}
 				} else {
 					Log.e(TAG, "compressed bitmap is null!!!");
 				}
@@ -760,6 +765,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			// 开始处理水印
 			Bitmap result = handleWatermark(data, originExif);
 			if (result != null) {
+				// 用完后立即置null，防止内存占用过多
+				mPictureBytesData = null;
 				BufferedOutputStream bos = null;
 				try {
 					bos = new BufferedOutputStream(new FileOutputStream(pictureFile));
@@ -790,12 +797,21 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				Log.i(TAG, "不进行压缩，不处理水印，正常保存： " + pictureFile);
 				// 用完后立即置null，防止内存占用过多
 				mPictureBytesData = null;
+				FileOutputStream fos = null;
 				try {
-					FileOutputStream fos = new FileOutputStream(pictureFile);
+					fos = new FileOutputStream(pictureFile);
 					fos.write(data);
 					fos.close();
 				} catch (Exception e) {
 					Log.e(TAG,"saveImage 照片存储失败", e);
+				} finally {
+					if (fos != null) {
+						try {
+							fos.close();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
 				}
 			}
 		}
@@ -868,6 +884,12 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				result = ImageWatermarkUtil.drawTextToCenter(CustomCameraActivity.this,
 						sourceBitmap, watermarkOptionsVO.getMarkText(),
 						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()), degree);
+			}
+		}
+		if (result != null && sourceBitmap != null) {
+			Log.i(TAG, "watermark result is not null.");
+			if (!sourceBitmap.isRecycled()) {
+				sourceBitmap.recycle();
 			}
 		}
 		return result;
