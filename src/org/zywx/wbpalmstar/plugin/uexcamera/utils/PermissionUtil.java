@@ -1,6 +1,8 @@
 package org.zywx.wbpalmstar.plugin.uexcamera.utils;
 
 import android.hardware.Camera;
+import android.os.Environment;
+import android.text.TextUtils;
 
 public class PermissionUtil {
     public static boolean checkCameraPermission() {
@@ -23,5 +25,9 @@ public class PermissionUtil {
             }
         }
         return isCanUse;
+    }
+
+    public static boolean isNeedStoragePermission(String filePath) {
+        return !TextUtils.isEmpty(filePath) && filePath.startsWith(Environment.getExternalStorageDirectory().getAbsolutePath());
     }
 }

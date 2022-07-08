@@ -18,6 +18,7 @@ import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.webkit.URLUtil;
@@ -40,6 +41,9 @@ import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.FileUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.MLog;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.MemoryUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.PermissionUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.vo.CompressOptionsVO;
+import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenInternalVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenViewCameraVO;
 
 import java.io.BufferedOutputStream;
@@ -48,6 +52,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
@@ -118,9 +123,21 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
      * 处理权限申请结果
      */
     private void handleRequestPermissionResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        boolean isPermissionGranted = true;
+        for (int i = 0; i < grantResults.length; i++) {
+            int result = grantResults[i];
+            if (result != PackageManager.PERMISSION_GRANTED) {
+                isPermissionGranted = false;
+                break;
+            }
+            if (!PermissionUtil.isNeedStoragePermission(mTempPath.getAbsolutePath())) {
+                break;
+            }
+        }
+
         switch (requestCode) {
             case REQUSTCAMERACODENOMAL:
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (isPermissionGranted) {
                     openNomalCamera(paramNomal);
                 } else {
                     Toast.makeText(mContext, "为了不影响功能的正常使用,请打开相关权限!", Toast.LENGTH_LONG).show();
@@ -129,7 +146,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                 break;
 
             case REQUSTCAMERACODECUSTOM:
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (isPermissionGranted) {
                     openCustomCamera(paramCustom);
 
                 } else {
@@ -139,7 +156,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                 break;
 
             case REQUSTCAMERACODECUSTOM_VIEW_MODE:
-                if (grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                if (isPermissionGranted) {
                     openCustomCamera2(paramCustom2);
                 } else {
                     Toast.makeText(mContext, "为了不影响功能的正常使用,请打开相关权限!", Toast.LENGTH_LONG).show();
@@ -337,89 +354,70 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
      */
     public void openInternal(String[] parm) {
         paramCustom = parm;
-        if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED){
+
+        String outputPath = generateOutputPhotoFilePath();// 获得新的存放目录
+        mTempPath = new File(outputPath);
+
+        if (ContextCompat.checkSelfPermission(mContext, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+                && (!PermissionUtil.isNeedStoragePermission(mTempPath.getAbsolutePath()) || ContextCompat.checkSelfPermission(mContext, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)){
             openCustomCamera(paramCustom);
-        }else{
+        } else if (PermissionUtil.isNeedStoragePermission(mTempPath.getAbsolutePath())){
             requsetPerssionsMore(new String[]{Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE}, EUExUtil.getString("plugin_camera_permission_request_hint"), REQUSTCAMERACODECUSTOM);
+        } else {
+            requsetPerssionsMore(new String[]{Manifest.permission.CAMERA}, EUExUtil.getString("plugin_camera_permission_request_hint"), REQUSTCAMERACODECUSTOM);
         }
     }
 
-    private void openCustomCamera(String[] parm) {
+    private OpenInternalVO parseOpenInternalParams(String[] params) {
+        OpenInternalVO openInternalVO = null;
+        if (params.length > 0 && isJson(params[0])) {
+            openInternalVO = DataHelper.gson.fromJson(params[0], OpenInternalVO.class);
+            if(params.length > 1) {
+                openInternalVO.setOpenInternalCallbackFuncId(params[1]);
+            }
+        } else {
+            openInternalVO = new OpenInternalVO();
+            if (params.length >= 1) {
+                CompressOptionsVO compressOptions = new CompressOptionsVO();
+                int isCompress = Integer.parseInt(params[0]);
+                // 这里做了一个兼容处理。老的传参逻辑是0为开启压缩，非0不压缩。由于新的json参数里0为不压缩，非0为压缩，因此这里做一个参数的转换。后面代码就可以统一为新逻辑。
+                compressOptions.setIsCompress(isCompress == 0 ? 1 : 0);
+
+                if (params.length >= 2) {
+                    int quality = Integer.parseInt(params[1]);
+                    compressOptions.setQuality(quality);
+
+                    if(params.length >= 3) {
+                        String callbackId = params[2];
+                        openInternalVO.setOpenInternalCallbackFuncId(callbackId);
+                    }
+                }
+                openInternalVO.setCompressOptions(compressOptions);
+            }
+        }
+        return openInternalVO;
+    }
+
+    private void openCustomCamera(String[] params) {
         // @formatter:on
         // 初始化压缩相关成员变量
         initCompressFields();
-
-        /**
-         * 如果参数>=1
-         */
-        if (parm.length >= 1) {
-
-            // 得到压缩标志
-            int value = 1;
-            try {
-                value = Integer.parseInt(parm[0]);
-            } catch (NumberFormatException e) {
-                e.printStackTrace();
-                MLog.getIns().e(e);
-            }
-            mIsCompress = value == 0 ? true : false;
-
-            /**
-             * 如果参数>=2 且 可压缩
-             */
-            if (parm.length >= 2 && mIsCompress) {
-
-                // 得到压缩质量
-                int quality = 100;
-                try {
-                    quality = Integer.parseInt(parm[1]);
-                } catch (NumberFormatException e) {
-                    e.printStackTrace();
-                    MLog.getIns().e(e);
-                }
-                mQuality = quality;
-
-                // 对mQuality进行容错处理
-                if (mQuality < 1 || mQuality > 100) {
-                    mQuality = 100;
-                }
-
-                /**
-                 * 如果参数>=3
-                 */
-//				if (parm.length >= 3) {
-//
-//					// 根据传入的宽高计算图片压缩比
-//					String photoValue = parm[2];
-//					try {
-//
-//						JSONObject jsonObject = new JSONObject(photoValue);
-//						int width = Integer.parseInt(jsonObject.getString("width"));
-//						int height = Integer.parseInt(jsonObject.getString("height"));
-//
-//						if (width > 0) {
-//							mPhotoWidth = width;
-//						}
-//						if (height > 0) {
-//							mPhotoHeight = height;
-//						}
-//
-//					} catch (JSONException e) {
-//
-//						e.printStackTrace();
-//						MLog.getIns().e(e);
-//						mPhotoWidth = -1;
-//						mPhotoHeight = -1;
-//
-//					} catch (NumberFormatException e) {
-//
-//						e.printStackTrace();
-//						MLog.getIns().e(e);
-//						mPhotoWidth = -1;
-//						mPhotoHeight = -1;
-//
-//					}
-//				}
+        // 解析参数
+        OpenInternalVO openInternalVO = parseOpenInternalParams(params);
+        if (openInternalVO == null) {
+            Log.e(TAG, "openInternal ==》 openCustomCamera 参数处理异常: " + Arrays.toString(params));
+            return;
+        }
+        // 判断压缩逻辑
+        CompressOptionsVO compressOptions = openInternalVO.getCompressOptions();
+        if (compressOptions != null) {
+            int isCompress = compressOptions.getIsCompress();
+            mIsCompress = isCompress > 0;
+            // 得到压缩质量
+            mQuality = compressOptions.getQuality();
+            // 对mQuality进行容错处理
+            if (mQuality < 1 || mQuality > 100) {
+                mQuality = 100;
             }
         }
 
@@ -434,17 +432,6 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
         // 如果SD卡可以工作
         if (BUtility.sdCardIsWork()) {
-
-            // 如果不压缩
-            if (!mIsCompress) {
-                String outputPath = generateOutputPhotoFilePath();// 获得新的存放目录
-                mTempPath = new File(outputPath);
-            } else {
-
-                // 使用临时文件名存储文件
-                mTempPath = new File(BUtility.getSdCardRootPath() + "demo.jpg");
-            }
-
             // 如果不存在，创建
             if (!mTempPath.exists()) {
                 try {
@@ -454,18 +441,15 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                     MLog.getIns().e(e);
                 }
             }
-            int len = parm.length;
-            if (len > 2) {
-                openInternalFunc = parm[2];
-
-            }
+            openInternalFunc = openInternalVO.getOpenInternalCallbackFuncId();
             // 发Intent调用自定义相机
-            Intent camaIntent = new Intent();
+            Intent cameraIntent = new Intent();
             MLog.getIns().i("mTempPath = " + mTempPath);
-            camaIntent.setClass(mContext, CustomCameraActivity.class);
-            camaIntent.putExtra(Constant.INTENT_EXTRA_NAME_PHOTO_PATH, mTempPath.getAbsolutePath());
-            camaIntent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
-            startActivityForResult(camaIntent, Constant.REQUEST_CODE_INTERNAL_CAMERA);
+            cameraIntent.setClass(mContext, CustomCameraActivity.class);
+            cameraIntent.putExtra(Constant.INTENT_EXTRA_NAME_PHOTO_PATH, mTempPath.getAbsolutePath());
+            cameraIntent.putExtra(Constant.INTENT_EXTRA_OPTIONS, openInternalVO);
+            cameraIntent.setFlags(Intent.FLAG_ACTIVITY_BROUGHT_TO_FRONT);
+            startActivityForResult(cameraIntent, Constant.REQUEST_CODE_INTERNAL_CAMERA);
 
         }
 
@@ -475,11 +459,10 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
             MLog.getIns().e("SD卡不可用");
             Toast.makeText(mContext, EUExUtil.getString("error_sdcard_is_not_available"), Toast.LENGTH_SHORT).show();
             errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, EUExUtil.getString("error_sdcard_is_not_available"));
-            return;
         }
     }
 
-    boolean isJson(String str) {
+    private static boolean isJson(String str) {
         if (TextUtils.isEmpty(str)) {
             return false;
         }
@@ -834,64 +817,70 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                     return;
                 }
             } else if (requestCode == Constant.REQUEST_CODE_INTERNAL_CAMERA) {
-                if (null != data)
-                    ;
                 finalPath = mTempPath.getAbsolutePath();
-                if (finalPath != null) {
-                    try {
-                        exif = new ExifInterface(finalPath);
-                        int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, -1);
-                        if (orientation != -1) {
-                            switch (orientation) {
-                                case ExifInterface.ORIENTATION_NORMAL:
-                                    degree = 0;
-                                    break;
-                                case ExifInterface.ORIENTATION_ROTATE_90:
-                                    degree = 90;
-                                    break;
-                                case ExifInterface.ORIENTATION_ROTATE_180:
-                                    degree = 180;
-                                    break;
-                                case ExifInterface.ORIENTATION_ROTATE_270:
-                                    degree = 270;
-                                    break;
-                            }
-                        }
-                    } catch (IOException e) {
-                        e.printStackTrace();
-                    }
-
-                    if (mTempPath != null && !mTempPath.exists()){
-                        BDebug.e(TAG, "openInternal Camera mTempPath is not exist: " + mTempPath.getAbsolutePath());
-                    }
-
-                    if (!mIsCompress && 0 == degree) {
-                        if (TextUtils.isEmpty(openInternalFunc)) {
-                            jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
-                        } else {
-                            callbackToJs(Integer.parseInt(openInternalFunc), false, finalPath);
-                        }
-                    } else {
-                        String tPath = makePicture(new File(finalPath), degree);
-                        if (null == tPath) {
-                            errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
-                        } else {
-                            if (TextUtils.isEmpty(openInternalFunc)) {
-                                jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, tPath);
-                            } else {
-                                callbackToJs(Integer.parseInt(openInternalFunc), false, tPath);
-                            }
+                try {
+                    exif = new ExifInterface(finalPath);
+                    int orientation = exif.getAttributeInt(ExifInterface.TAG_ORIENTATION, -1);
+                    MLog.getIns().i("ExifInterface Orientation: " + orientation);
+                    if (orientation != -1) {
+                        switch (orientation) {
+                            case ExifInterface.ORIENTATION_NORMAL:
+                                degree = 0;
+                                break;
+                            case ExifInterface.ORIENTATION_ROTATE_90:
+                                degree = 90;
+                                break;
+                            case ExifInterface.ORIENTATION_ROTATE_180:
+                                degree = 180;
+                                break;
+                            case ExifInterface.ORIENTATION_ROTATE_270:
+                                degree = 270;
+                                break;
                         }
                     }
+                    MLog.getIns().i("ExifInterface degree: " + degree);
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
-            } else if (requestCode == 68) {
+
+                if (mTempPath != null && !mTempPath.exists()){
+                    BDebug.e(TAG, "openInternal Camera mTempPath is not exist: " + mTempPath.getAbsolutePath());
+                }
+
+                FileUtil.checkFilePath(finalPath);
+
+                if (TextUtils.isEmpty(openInternalFunc)) {
+                    jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
+                } else {
+                    callbackToJs(Integer.parseInt(openInternalFunc), false, finalPath);
+                }
+
+//                if (!mIsCompress && 0 == degree) {
+//                    if (TextUtils.isEmpty(openInternalFunc)) {
+//                        jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
+//                    } else {
+//                        callbackToJs(Integer.parseInt(openInternalFunc), false, finalPath);
+//                    }
+//                } else {
+//                    String tPath = makePicture(new File(finalPath), degree);
+//                    if (null == tPath) {
+//                        errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
+//                    } else {
+//                        if (TextUtils.isEmpty(openInternalFunc)) {
+//                            jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, tPath);
+//                        } else {
+//                            callbackToJs(Integer.parseInt(openInternalFunc), false, tPath);
+//                        }
+//                    }
+//                }
+            } else if (requestCode == Constant.REQUEST_CODE_INTERNAL_VIEW_CAMERA) {
                 MLog.getIns().i("requestCode = " + requestCode);
                 String photoPath = data.getStringExtra("photoPath");
                 closeViewAndCallback(photoPath);
             }
         } else if (resultCode == Activity.RESULT_CANCELED) {// 如果是取消标志 change by
             // waka 2016-01-28
-            if (requestCode == 68) {// 如果是SecondActivity传回来的取消标记
+            if (requestCode == Constant.REQUEST_CODE_INTERNAL_VIEW_CAMERA) {// 如果是SecondActivity传回来的取消标记
                 mCameraView.setCameraTakingPhoto(false);// 设置正在照相标记为false
             }else if (requestCode == Constant.REQUEST_CODE_SYSTEM_CAMERA){
                 // 打开系统相机后取消操作

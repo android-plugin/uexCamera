@@ -11,8 +11,10 @@ public class Constant {
 	// RequestCode
 	public static final int REQUEST_CODE_SYSTEM_CAMERA = 66;// 系统相机
 	public static final int REQUEST_CODE_INTERNAL_CAMERA = 67;// 自定义相机
-	
+	public static final int REQUEST_CODE_INTERNAL_VIEW_CAMERA = 68;// 自定义View级别的相机
+
 	// EUExCamera跳转到自定义相机需要传的数据
 	public static final String INTENT_EXTRA_NAME_PHOTO_PATH = "photoPath";// 图片路径
+	public static final String INTENT_EXTRA_OPTIONS = "extraOptions";// 图片路径
 
 }
