@@ -13,6 +13,7 @@
 	<bgcolor>#fefefe</bgcolor>
 	<orientation>1</orientation>
 	<debug enable="true"/>
+	<widgetonelocation>1</widgetonelocation>
 <partobfuscation>false</partobfuscation>
 <webapp/>
 <config desc="uexALiBaiChuan" type="URLSCHEME"> 
