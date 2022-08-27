@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="4.3.14.5" build="2022042101">
-        <info>14.5:自定义相机修复水印字体大小无法调整问题</info>
+        uexName="uexCamera" version="4.3.15" build="2022082801">
+        <info>15:增加添加水印接口单独用于给图片增加水印</info>
+        <build>14.5:自定义相机修复水印字体大小无法调整问题</build>
         <build>14.4:自定义相机修复未开沙箱存储开关时存储权限未强制申请的问题</build>
         <build>14.3:自定义相机修复部分设备照片方向错误的问题</build>
         <build>14.2:自定义相机增加了水印配置的处理，优化部分UI</build>
