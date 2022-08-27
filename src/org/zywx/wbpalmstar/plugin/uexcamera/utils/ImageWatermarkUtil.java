@@ -2,11 +2,17 @@ package org.zywx.wbpalmstar.plugin.uexcamera.utils;
 
 import android.content.Context;
 import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
+import android.graphics.Color;
 import android.graphics.Matrix;
 import android.graphics.Paint;
 import android.graphics.Rect;
+import android.media.ExifInterface;
 import android.text.TextUtils;
+import android.util.Log;
+
+import org.zywx.wbpalmstar.plugin.uexcamera.vo.WatermarkOptionsVO;
 
 /**
  * File Description: 为图片增加水印
@@ -16,6 +22,54 @@ import android.text.TextUtils;
  * copy from https://juejin.cn/post/6960579316191068197
  */
 public class ImageWatermarkUtil {
+
+    private static final String TAG = "ImageWatermarkUtil";
+
+    public static Bitmap handleWatermark(Context context, byte[] data, ExifInterface originExif, WatermarkOptionsVO watermarkOptionsVO) {
+        BitmapFactory.Options options = new BitmapFactory.Options();
+        Bitmap sourceBitmap = BitmapFactory.decodeByteArray(data, 0, data.length, options);
+        return ImageWatermarkUtil.handleWatermark(context, sourceBitmap, originExif, watermarkOptionsVO);
+    }
+
+    public static Bitmap handleWatermark(Context context, Bitmap sourceBitmap, ExifInterface originExif, WatermarkOptionsVO watermarkOptionsVO) {
+        int degree = ExifUtil.getExifOrientationDegree(originExif);
+        Bitmap result = null;
+        if (watermarkOptionsVO != null) {
+            if (WatermarkOptionsVO.POSITION_LEFT_TOP.equals(watermarkOptionsVO.getPosition())) {
+                result = ImageWatermarkUtil.drawTextToLeftTop(context,
+                        sourceBitmap, watermarkOptionsVO.getMarkText(),
+                        watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()),
+                        watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY(), degree);
+            } else if (WatermarkOptionsVO.POSITION_RIGHT_TOP.equals(watermarkOptionsVO.getPosition())) {
+                result = ImageWatermarkUtil.drawTextToRightTop(context,
+                        sourceBitmap, watermarkOptionsVO.getMarkText(),
+                        watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()),
+                        watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY(), degree);
+            } else if (WatermarkOptionsVO.POSITION_LEFT_BOTTOM.equals(watermarkOptionsVO.getPosition())) {
+                result = ImageWatermarkUtil.drawTextToLeftBottom(context,
+                        sourceBitmap, watermarkOptionsVO.getMarkText(),
+                        watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()),
+                        watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY(), degree);
+            } else if (WatermarkOptionsVO.POSITION_RIGHT_BOTTOM.equals(watermarkOptionsVO.getPosition())) {
+                result = ImageWatermarkUtil.drawTextToRightBottom(context,
+                        sourceBitmap, watermarkOptionsVO.getMarkText(),
+                        watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()),
+                        watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY(), degree);
+            } else {
+                result = ImageWatermarkUtil.drawTextToCenter(context,
+                        sourceBitmap, watermarkOptionsVO.getMarkText(),
+                        watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()), degree);
+            }
+        }
+        if (result != null && sourceBitmap != null) {
+            Log.i(TAG, "watermark result is not null.");
+            if (!sourceBitmap.isRecycled()) {
+                sourceBitmap.recycle();
+            }
+        }
+        return result;
+    }
+
     /**
      * 设置水印图片在左上角
      *

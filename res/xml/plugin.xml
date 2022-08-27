@@ -10,6 +10,7 @@
         <method name="removeViewCameraFromWindow" />
         <method name="changeFlashMode" />
         <method name="changeCameraPosition" />
+        <method name="addWatermark" />
     </plugin>
 
 </uexplugins>

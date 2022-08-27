@@ -13,6 +13,8 @@ import android.media.ExifInterface;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
+import android.os.Looper;
 import android.os.StrictMode;
 import android.provider.MediaStore;
 import android.support.annotation.NonNull;
@@ -38,10 +40,13 @@ import org.zywx.wbpalmstar.engine.universalex.EUExUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.ViewCamera.CallbackCameraViewClose;
 import org.zywx.wbpalmstar.plugin.uexcamera.ViewCamera.CameraView;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.ExifUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.FileUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.ImageWatermarkUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.MLog;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.MemoryUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.PermissionUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.vo.AddWatermarkVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.CompressOptionsVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenInternalVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenViewCameraVO;
@@ -53,6 +58,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
@@ -88,6 +95,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
     private String label = "";// 拍照时显示在界面中的提示语或标签
     private View view;// 自定义相机View
     private CameraView mCameraView;// 自定义相机View实例
+    private static ExecutorService mExecutorService;
 
     /**
      * 构造方法
@@ -653,6 +661,121 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
     }
 
     /**
+     * 给照片添加水印
+     *
+     * @param params
+     */
+    public void addWatermark(String[] params) {
+        if (params.length < 1) {
+            BDebug.e(TAG, "addWatermark params error");
+            return;
+        }
+        String callbackId;
+        if (params.length > 1) {
+            callbackId = params[1];
+        } else {
+            callbackId = "";
+        }
+        if (mExecutorService == null) {
+            mExecutorService = Executors.newFixedThreadPool(1);
+        }
+        AddWatermarkVO addWatermarkVO = DataHelper.gson.fromJson(params[0], AddWatermarkVO.class);
+        if(params.length > 1) {
+            addWatermarkVO.setAddWatermarkCallbackFuncId(params[1]);
+        }
+        String srcImgPathOri = addWatermarkVO.getSrcImgPath();
+        String dstImgPathOri = addWatermarkVO.getDstImgPath();
+        if (TextUtils.isEmpty(srcImgPathOri)) {
+            callbackResultOnUIThread(callbackId, "", "srcImgPath is null");
+            return;
+        }
+        String srcImgPath = BUtility.makeRealPath(srcImgPathOri, mBrwView);
+        BDebug.i(TAG, "addWatermark", "srcImgPath = " + srcImgPath);
+        if (TextUtils.isEmpty(dstImgPathOri)) {
+            dstImgPathOri = generateOutputPhotoFilePath("watermark");
+        }
+        String dstImgPath = BUtility.makeRealPath(dstImgPathOri, mBrwView);
+        BDebug.i(TAG, "addWatermark", "dstImgPath = " + dstImgPath);
+        new File(dstImgPath).getParentFile().mkdirs();
+        // 开启线程添加水印
+        mExecutorService.submit(new Runnable() {
+            @Override
+            public void run() {
+
+                try {
+                    Bitmap srcBitmap = BitmapFactory.decodeFile(srcImgPath);
+                    if (srcBitmap == null) {
+                        callbackResultOnUIThread(callbackId, "", "srcImgPath is null");
+                        return;
+                    }
+                    // 读取图片的exif信息
+                    ExifInterface originExif = ExifUtil.getExifInfo(srcImgPath);
+                    // 开始处理水印
+                    Log.i(TAG, "addWatermark: starting to handle WaterMark...");
+                    Bitmap result = ImageWatermarkUtil.handleWatermark(mContext, srcBitmap, originExif, addWatermarkVO.getWatermarkOptions());
+
+                    FileOutputStream out = null;
+                    try {
+                        out = new FileOutputStream(dstImgPath);
+                        result.compress(Bitmap.CompressFormat.JPEG, 100, out);
+                        out.flush();
+                    } finally {
+                        if (out != null) {
+                            try {
+                                out.close();
+                            } catch (IOException e) {
+                                e.printStackTrace();
+                            }
+                        }
+                    }
+
+                    // 如果原图存在exif，则需要重新写入exif防止图片方向错误（压缩后exif会丢失，故需要重新写入）
+                    if (ExifUtil.getExifOrientationDegree(originExif) != 0) {
+                        MLog.getIns().i(TAG + "getExifOrientationDegree is not 0 degree, need to handle exif orientation");
+                        try {
+                            ExifInterface exifOutput = new ExifInterface(dstImgPath);
+                            ExifUtil.copyExifOrientation(originExif, exifOutput);
+                        } catch (Exception e) {
+                            Log.e(TAG, "saveImage", e);
+                        }
+                    }
+                    callbackResultOnUIThread(callbackId, dstImgPath, "ok");
+                } catch (Exception e) {
+                    e.printStackTrace();
+                    callbackResultOnUIThread(callbackId, "", e.getMessage());
+                }
+            }
+        });
+
+
+    }
+
+    /**
+     * 回到主线程回调结果
+     *
+     */
+    private void callbackResultOnUIThread(String funcId, String dstImgPath, String errorInfo) {
+        if (!TextUtils.isEmpty(funcId)) {
+            Handler uiThread = new Handler(Looper.getMainLooper());
+            uiThread.post(new Runnable() {
+                @Override
+                public void run() {
+                    JSONObject resultJson = new JSONObject();
+                    try {
+                        resultJson.put("dstImgPath", dstImgPath);
+                        resultJson.put("errorInfo", errorInfo);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                    }
+                    callbackToJs(Integer.parseInt(funcId), false, resultJson);
+                }
+            });
+        } else {
+            BDebug.w(TAG, "callbackResult: funcId is null");
+        }
+    }
+
+    /**
      * onActivityResult
      */
     @Override
@@ -1073,14 +1196,21 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
      * 生成照片输出目录的文件路径
      *
      */
-    private String generateOutputPhotoFilePath() {
+    private String generateOutputPhotoFilePath(String prefix) {
         // 直接已最终目录作为文件名
         String folderPath = BUtility.getWidgetOneRootPath() + "/apps/" + mBrwView.getRootWidget().m_appId + "/photo";// 获得文件夹路径
         FileUtil.checkFolderPath(folderPath);// 如果不存在，则创建所有的父文件夹
+        if (TextUtils.isEmpty(prefix)) {
+            prefix = "scan";
+        }
         // 生成带时间戳的目录
-        String fileName = FileUtil.getSimpleDateFormatFileName("scan", ".jpg");
+        String fileName = FileUtil.getSimpleDateFormatFileName(prefix, ".jpg");
         String outputFilePath = folderPath + "/" + fileName;// 获得新的存放目录
         return outputFilePath;
+    }
+
+    private String generateOutputPhotoFilePath() {
+        return generateOutputPhotoFilePath(null);
     }
 
     @Override

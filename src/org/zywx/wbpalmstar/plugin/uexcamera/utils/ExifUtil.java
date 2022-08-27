@@ -16,6 +16,16 @@ public class ExifUtil {
 
     private static final String TAG = "ExifUtil";
 
+    public static ExifInterface getExifInfo(String imgFilePath) {
+        ExifInterface exifInfo = null;
+        try {
+            exifInfo = new ExifInterface(imgFilePath);
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+        return exifInfo;
+    }
+
     public static ExifInterface getExifInfo(byte[] bitmapData) {
         ByteArrayInputStream bais = null;
         ExifInterface exifInfo = null;

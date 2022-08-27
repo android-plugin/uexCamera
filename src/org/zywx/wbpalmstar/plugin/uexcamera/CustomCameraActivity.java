@@ -9,7 +9,6 @@ import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
-import android.graphics.Color;
 import android.graphics.Rect;
 import android.hardware.Camera;
 import android.hardware.Camera.AutoFocusCallback;
@@ -717,7 +716,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					mPictureBytesData = null;
 					// 开始处理水印
 					Log.i(TAG, "saveImage(compress): starting to handle WaterMark...");
-					Bitmap result = handleWatermark(bm, originExif);
+					WatermarkOptionsVO watermarkOptionsVO = openInternalVO.getWatermarkOptions();
+					Bitmap result = ImageWatermarkUtil.handleWatermark(CustomCameraActivity.this, bm, originExif, watermarkOptionsVO);
 					if (result == null) {
 						Log.i(TAG, "saveImage(compress): no need to handle WaterMark...");
 						result = bm;
@@ -763,7 +763,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		} else {
 			Log.i(TAG, "saveImage(no compress): starting to handle WaterMark...");
 			// 开始处理水印
-			Bitmap result = handleWatermark(data, originExif);
+			WatermarkOptionsVO watermarkOptionsVO = openInternalVO.getWatermarkOptions();
+			Bitmap result = ImageWatermarkUtil.handleWatermark(CustomCameraActivity.this, data, originExif, watermarkOptionsVO);
 			if (result != null) {
 				// 用完后立即置null，防止内存占用过多
 				mPictureBytesData = null;
@@ -847,52 +848,6 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		return openInternalVO != null
 			&& openInternalVO.getStorageOptions() != null
 			&& "1".equals(openInternalVO.getStorageOptions().getIsPublic());
-	}
-
-	private Bitmap handleWatermark(byte[] data, ExifInterface originExif) {
-		BitmapFactory.Options options = new BitmapFactory.Options();
-		Bitmap sourceBitmap = BitmapFactory.decodeByteArray(data, 0, data.length, options);
-		return handleWatermark(sourceBitmap, originExif);
-	}
-
-	private Bitmap handleWatermark(Bitmap sourceBitmap, ExifInterface originExif) {
-		int degree = ExifUtil.getExifOrientationDegree(originExif);
-		Bitmap result = null;
-		WatermarkOptionsVO watermarkOptionsVO = openInternalVO.getWatermarkOptions();
-		if (watermarkOptionsVO != null) {
-			if (WatermarkOptionsVO.POSITION_LEFT_TOP.equals(watermarkOptionsVO.getPosition())) {
-				result = ImageWatermarkUtil.drawTextToLeftTop(CustomCameraActivity.this,
-						sourceBitmap, watermarkOptionsVO.getMarkText(),
-						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()),
-						watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY(), degree);
-			} else if (WatermarkOptionsVO.POSITION_RIGHT_TOP.equals(watermarkOptionsVO.getPosition())) {
-				result = ImageWatermarkUtil.drawTextToRightTop(CustomCameraActivity.this,
-						sourceBitmap, watermarkOptionsVO.getMarkText(),
-						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()),
-						watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY(), degree);
-			} else if (WatermarkOptionsVO.POSITION_LEFT_BOTTOM.equals(watermarkOptionsVO.getPosition())) {
-				result = ImageWatermarkUtil.drawTextToLeftBottom(CustomCameraActivity.this,
-						sourceBitmap, watermarkOptionsVO.getMarkText(),
-						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()),
-						watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY(), degree);
-			} else if (WatermarkOptionsVO.POSITION_RIGHT_BOTTOM.equals(watermarkOptionsVO.getPosition())) {
-				result = ImageWatermarkUtil.drawTextToRightBottom(CustomCameraActivity.this,
-						sourceBitmap, watermarkOptionsVO.getMarkText(),
-						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()),
-						watermarkOptionsVO.getPaddingX(), watermarkOptionsVO.getPaddingY(), degree);
-			} else {
-				result = ImageWatermarkUtil.drawTextToCenter(CustomCameraActivity.this,
-						sourceBitmap, watermarkOptionsVO.getMarkText(),
-						watermarkOptionsVO.getSize(), Color.parseColor(watermarkOptionsVO.getColor()), degree);
-			}
-		}
-		if (result != null && sourceBitmap != null) {
-			Log.i(TAG, "watermark result is not null.");
-			if (!sourceBitmap.isRecycled()) {
-				sourceBitmap.recycle();
-			}
-		}
-		return result;
 	}
 
 	/**
