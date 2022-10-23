@@ -11,6 +11,7 @@
         <method name="changeFlashMode" />
         <method name="changeCameraPosition" />
         <method name="addWatermark" />
+        <method name="setLogFileOutput" />
     </plugin>
 
 </uexplugins>

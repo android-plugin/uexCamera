@@ -1,6 +1,6 @@
 package org.zywx.wbpalmstar.plugin.uexcamera.utils;
 
-import android.util.Log;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.log.MLog;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -45,10 +45,10 @@ public class FileUtil {
 
 		File file = new File(folderPath);
 		if (!file.exists()) {
-			Log.i(TAG, "【checkFolderPath】	file.exists() == false");
+			MLog.getIns().i(TAG + "【checkFolderPath】	file.exists() == false");
 			return file.mkdirs();
 		}
-		Log.i(TAG, "【checkFolderPath】	file.exists() == true");
+		MLog.getIns().i(TAG + "【checkFolderPath】	file.exists() == true");
 		return true;
 	}
 
@@ -59,13 +59,13 @@ public class FileUtil {
 	 * @return 返回创建结果
 	 */
 	public static boolean checkFilePath(String filePath) {
-		Log.i(TAG, "【checkFilePath】   filePath == " + filePath);
+		MLog.getIns().i(TAG + "【checkFilePath】   filePath == " + filePath);
 		File file = new File(filePath);
 		if (!file.exists()) {
-			Log.i(TAG, "【checkFilePath】	file.exists() == false 照片不存在");
+			MLog.getIns().i(TAG + "【checkFilePath】	file.exists() == false 照片不存在");
 			return file.mkdirs();
 		}
-		Log.i(TAG, "【checkFilePath】	file.exists() == true");
+		MLog.getIns().i(TAG + "【checkFilePath】	file.exists() == true");
 		return true;
 	}
 

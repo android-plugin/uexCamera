@@ -20,7 +20,6 @@ import android.provider.MediaStore;
 import android.support.annotation.NonNull;
 import android.support.v4.content.ContextCompat;
 import android.text.TextUtils;
-import android.util.Log;
 import android.view.Display;
 import android.view.View;
 import android.webkit.URLUtil;
@@ -43,9 +42,9 @@ import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.ExifUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.FileUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.ImageWatermarkUtil;
-import org.zywx.wbpalmstar.plugin.uexcamera.utils.MLog;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.MemoryUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.PermissionUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.log.MLog;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.AddWatermarkVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.CompressOptionsVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenInternalVO;
@@ -105,6 +104,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
      */
     public EUExCamera(Context context, EBrowserView inParent) {
         super(context, inParent);
+        MLog.getIns().init(context.getApplicationContext());
     }
 
     public static void onApplicationCreate(Context context) {
@@ -184,6 +184,21 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                 handleRequestPermissionResult(requestCode, permissions, grantResults);
             }
         });
+    }
+
+    /**
+     * 增加日志输出到文件的开关控制，用于个别情况的调试。
+     *
+     * @param params
+     */
+    public void setLogFileOutput(String[] params){
+        boolean log2fileSwitch = false;
+        try {
+            log2fileSwitch = Boolean.parseBoolean(params[0]);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        MLog.getIns().setLog2fileSwitch(log2fileSwitch);
     }
 
     /**
@@ -413,7 +428,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
         // 解析参数
         OpenInternalVO openInternalVO = parseOpenInternalParams(params);
         if (openInternalVO == null) {
-            Log.e(TAG, "openInternal ==》 openCustomCamera 参数处理异常: " + Arrays.toString(params));
+            MLog.getIns().e(TAG + "openInternal ==》 openCustomCamera 参数处理异常: " + Arrays.toString(params));
             return;
         }
         // 判断压缩逻辑
@@ -711,7 +726,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                     // 读取图片的exif信息
                     ExifInterface originExif = ExifUtil.getExifInfo(srcImgPath);
                     // 开始处理水印
-                    Log.i(TAG, "addWatermark: starting to handle WaterMark...");
+                    MLog.getIns().i("addWatermark: starting to handle WaterMark...");
                     Bitmap result = ImageWatermarkUtil.handleWatermark(mContext, srcBitmap, originExif, addWatermarkVO.getWatermarkOptions());
 
                     FileOutputStream out = null;
@@ -736,7 +751,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                             ExifInterface exifOutput = new ExifInterface(dstImgPath);
                             ExifUtil.copyExifOrientation(originExif, exifOutput);
                         } catch (Exception e) {
-                            Log.e(TAG, "saveImage", e);
+                            MLog.getIns().e(TAG + "saveImage", e);
                         }
                     }
                     callbackResultOnUIThread(callbackId, dstImgPath, "ok");
@@ -1150,7 +1165,6 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
             // Toast.makeText(mContext, "照片尺寸过大，内存溢出，\n请降低尺寸拍摄！",
             // Toast.LENGTH_LONG).show();
             MLog.getIns().e("【makePictrue】 OutOfMemoryError 压缩质量mQuality = " + mQuality + " 压缩比mInSampleSize = " + mInSampleSize + e.getMessage(), e);
-
             if (options != null) {
                 options = null;
             }

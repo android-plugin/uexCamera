@@ -49,7 +49,7 @@ import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.ExifUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.FileUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.ImageWatermarkUtil;
-import org.zywx.wbpalmstar.plugin.uexcamera.utils.MLog;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.log.MLog;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenInternalVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.PhotoSizeVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.WatermarkOptionsVO;
@@ -387,7 +387,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			}
 			mCamera.setParameters(par);
 		} catch (Exception e) {
-			e.printStackTrace();
+			MLog.getIns().e(TAG + "checkFlash", e);
 		}
 	}
 
@@ -436,10 +436,10 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			mCamera.setPreviewDisplay(surfaceHolder);
 			mCamera.startPreview();
 			mPreviewing = true;
-			Log.i(TAG, "mPreviewing after inti camera mPreviewing changed to :" + mPreviewing);
+			MLog.getIns().i("mPreviewing after inti camera mPreviewing changed to :" + mPreviewing);
 			mCamera.autoFocus(this);
 		} catch (Exception e) {
-			e.printStackTrace();
+			MLog.getIns().e(TAG + "initCamera", e);
 		}
 	}
 
@@ -660,7 +660,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			bm = BitmapFactory.decodeByteArray(data, 0, data.length, options);
 			bm = BitmapUtil.rotate(bm, degree);
 		} catch (Exception e) {
-			Log.w(TAG, "createThumbnail exception", e);
+			MLog.getIns().e(TAG + "createThumbnail exception", e);
 		}
 		return bm;
 	}
@@ -680,7 +680,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		if (!(openInternalVO == null
 				|| openInternalVO.getCompressOptions() == null
 				|| openInternalVO.getCompressOptions().getIsCompress() == 0)) {
-			Log.i(TAG, "saveImage: starting to handle Compress...");
+			MLog.getIns().i("saveImage: starting to handle Compress...");
 			Bitmap bm = null;
 			int quality = 100;
 			// 开启压缩
@@ -702,7 +702,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					// 使用quality压缩，取值1-100
 					if (quality > 100 || quality <= 0) {
 						quality = 100;
-						Log.w(TAG, "compress quality is invalid: " + quality + ". change it to 100");
+						MLog.getIns().w(TAG + "compress quality is invalid: " + quality + ". change it to 100");
 					}
 				}
 			} else {
@@ -715,14 +715,14 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					// 用完后立即置null，防止内存占用过多
 					mPictureBytesData = null;
 					// 开始处理水印
-					Log.i(TAG, "saveImage(compress): starting to handle WaterMark...");
+					MLog.getIns().i("saveImage(compress): starting to handle WaterMark...");
 					WatermarkOptionsVO watermarkOptionsVO = openInternalVO.getWatermarkOptions();
 					Bitmap result = ImageWatermarkUtil.handleWatermark(CustomCameraActivity.this, bm, originExif, watermarkOptionsVO);
 					if (result == null) {
-						Log.i(TAG, "saveImage(compress): no need to handle WaterMark...");
+						MLog.getIns().i("saveImage(compress): no need to handle WaterMark...");
 						result = bm;
 					} else {
-						Log.i(TAG, "saveImage(compress): handle WaterMark finished...");
+						MLog.getIns().i("saveImage(compress): handle WaterMark finished...");
 					}
 					// 处理水印结束，开始写入文件
 					BufferedOutputStream bos = null;
@@ -731,7 +731,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 						result.compress(Bitmap.CompressFormat.JPEG, quality, bos);
 						bos.flush();
 					} catch (IOException e) {
-						Log.e(TAG, "AppCan Camera Watermark", e);
+						MLog.getIns().e(TAG + "AppCan Camera Watermark", e);
 					} finally {
 						if (bos != null) {
 							try {
@@ -754,14 +754,14 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 						result.recycle();
 					}
 				} else {
-					Log.e(TAG, "compressed bitmap is null!!!");
+					MLog.getIns().e(TAG + "compressed bitmap is null!!!");
 				}
 				// 图片文件以JPEG格式写入本地完毕
 			} catch (Exception e) {
-				Log.e(TAG, "AppCan Camera Compress", e);
+				MLog.getIns().e(TAG + "AppCan Camera Compress", e);
 			}
 		} else {
-			Log.i(TAG, "saveImage(no compress): starting to handle WaterMark...");
+			MLog.getIns().i("saveImage(no compress): starting to handle WaterMark...");
 			// 开始处理水印
 			WatermarkOptionsVO watermarkOptionsVO = openInternalVO.getWatermarkOptions();
 			Bitmap result = ImageWatermarkUtil.handleWatermark(CustomCameraActivity.this, data, originExif, watermarkOptionsVO);
@@ -774,7 +774,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					result.compress(Bitmap.CompressFormat.JPEG, 100, bos);
 					bos.flush();
 				} catch (IOException e) {
-					Log.e(TAG, "AppCan Camera Watermark", e);
+					MLog.getIns().e(TAG + "AppCan Camera Watermark", e);
 				} finally {
 					if (bos != null) {
 						try {
@@ -795,7 +795,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				}
 			} else {
 				// 无压缩，无水印，正常保存
-				Log.i(TAG, "不进行压缩，不处理水印，正常保存： " + pictureFile);
+				MLog.getIns().i("不进行压缩，不处理水印，正常保存： " + pictureFile);
 				// 用完后立即置null，防止内存占用过多
 				mPictureBytesData = null;
 				FileOutputStream fos = null;
@@ -804,7 +804,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					fos.write(data);
 					fos.close();
 				} catch (Exception e) {
-					Log.e(TAG,"saveImage 照片存储失败", e);
+					MLog.getIns().e(TAG + "saveImage 照片存储失败", e);
 				} finally {
 					if (fos != null) {
 						try {
@@ -825,7 +825,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				ExifUtil.copyExifOrientation(originExif, exifOutput);
 				data = FileUtil.getByteArrayFromFile(pictureFile);
 			} catch (Exception e) {
-				Log.e(TAG, "saveImage", e);
+				MLog.getIns().e(TAG + "saveImage", e);
 			}
 		}
 
@@ -836,11 +836,11 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				updateAlbum(data, pictureFile.getName());
 			} else {
 				// TODO
-				Log.e(TAG, "系统版本低于R，暂不处理写入相册逻辑");
+				MLog.getIns().e(TAG + "系统版本低于R，暂不处理写入相册逻辑");
 			}
 		} else {
 			// 关闭了公共存储，故不需要更新到相册
-			Log.i(TAG, "storageOptions isPublic is 0, no need to updateAlbum");
+			MLog.getIns().i("storageOptions isPublic is 0, no need to updateAlbum");
 		}
 	}
 
@@ -878,15 +878,15 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			outputStream = CustomCameraActivity.this.getContentResolver().openOutputStream(uri);
 			outputStream.write(data);
 			outputStream.flush();
-			Log.i(TAG, "storageOptions isPublic is 1, updateAlbum and write to ExternalStorage Path: " + relativeDirPath);
+			MLog.getIns().i("storageOptions isPublic is 1, updateAlbum and write to ExternalStorage Path: " + relativeDirPath);
 			// Everything went well above, publish it!
 			values.clear();
 			values.put(MediaStore.MediaColumns.IS_PENDING, 0);
 			values.putNull(MediaStore.MediaColumns.DATE_EXPIRES);
 			CustomCameraActivity.this.getContentResolver().update(uri, values, null, null);
-			Log.i(TAG, "updateAlbum complete!");
+			MLog.getIns().i("updateAlbum complete!");
 		} catch (IOException e) {
-			e.printStackTrace();
+			MLog.getIns().e(TAG + "updateAlbum", e);
 			CustomCameraActivity.this.getContentResolver().delete(uri, null);
 		} finally {
 			try {
@@ -984,7 +984,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			mCamera.setParameters(parameters);
 			mCamera.autoFocus(this);
 		} catch (Exception e) {
-			e.printStackTrace();
+			MLog.getIns().e(TAG + "focusOnTouch", e);
 		}
 	}
 

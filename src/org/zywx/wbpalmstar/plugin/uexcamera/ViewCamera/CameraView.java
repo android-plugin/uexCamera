@@ -47,6 +47,7 @@ import org.zywx.wbpalmstar.plugin.uexcamera.EUExCamera;
 import org.zywx.wbpalmstar.plugin.uexcamera.LogUtils;
 import org.zywx.wbpalmstar.plugin.uexcamera.Util;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.log.MLog;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -330,7 +331,7 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 
 			if (mCamera == null) {
 
-				Log.i(TAG, "surfaceCreated	camera == null");
+				MLog.getIns().i(TAG, "surfaceCreated	camera == null");
 				return;
 			}
 			mCamera.setPreviewDisplay(mSurfaceHolder);// 设置holder主要是用于surfaceView的图片的实时预览，以及获取图片等功能，可以理解为控制camera的操作
@@ -435,7 +436,7 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 
 		if (mCamera == null) {
 
-			Log.e(TAG, "surfaceDestroyed	camera == null");
+			MLog.getIns().e(TAG, "surfaceDestroyed	camera == null");
 			return;
 		}
 
@@ -579,12 +580,12 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 				return;
 			}
 			// 如果照相机没有正在拍照，则拍照；因为连续按拍照键会报错，所以得设置这样一个标志位
-			Log.i("uexCamera", "isCameraTakingPhoto---->" + isCameraTakingPhoto);
+			MLog.getIns().i("uexCamera", "isCameraTakingPhoto---->" + isCameraTakingPhoto);
 			if (isCameraTakingPhoto == false) {
 				// 照相前判定如果是前置摄像头，则将照片位置旋转270度，必须这样做要不会前置摄像头重拍时会图像位置会发生颠倒
 				if (cameraPosition == 1) {
 					Camera.Parameters parameters = mCamera.getParameters();
-					Log.e("TAG", "parameters:::::::"+parameters);
+					MLog.getIns().e("TAG", "parameters:::::::"+parameters);
 //					parameters.setRotation(90);
 					mCamera.setParameters(parameters);
 				}
@@ -671,7 +672,7 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 			// 生成并旋转bitmap
 			bitmap = BitmapFactory.decodeByteArray(data, 0, data.length, options);// 生成bitmap
 			if (bitmap == null) {
-				Log.i(TAG, "bitmap is null!");
+				MLog.getIns().i(TAG, "bitmap is null!");
 				return null;
 			}
 			bitmap = Util.rotate(bitmap, getRotate());// 旋转bitmap
@@ -752,7 +753,7 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 			// 生成并旋转bitmap
 			bitmap = BitmapFactory.decodeByteArray(data, 0, data.length, options);// 生成bitmap
 			if (bitmap == null) {
-				Log.i(TAG, "bitmap is null!");
+				MLog.getIns().i(TAG, "bitmap is null!");
 				return null;
 			}
 			bitmap = Util.rotate(bitmap, getRotate());// 旋转bitmap
@@ -862,7 +863,7 @@ public class CameraView extends RelativeLayout implements Callback, View.OnClick
 	private Bitmap rotateBitmap(Bitmap bitmap, int orientation) {
 
 		Matrix matrix = new Matrix();
-		Log.i(TAG, "cameraPosition" + cameraPosition);
+		MLog.getIns().i(TAG, "cameraPosition" + cameraPosition);
 		// 若是前置摄像头，则需要调整方向
 		if (cameraPosition == 1) {
 			if (orientation == 270) {

@@ -2,7 +2,8 @@ package org.zywx.wbpalmstar.plugin.uexcamera.utils;
 
 import android.media.ExifInterface;
 import android.text.TextUtils;
-import android.util.Log;
+
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.log.MLog;
 
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
@@ -83,10 +84,10 @@ public class ExifUtil {
                 newExif.setAttribute(ExifInterface.TAG_ORIENTATION, orientation);
                 newExif.saveAttributes();
             } else {
-                Log.i(TAG, "copyExifOrientation skipped. No orientation info.");
+                MLog.getIns().i(TAG + "copyExifOrientation skipped. No orientation info.");
             }
         } catch (Exception e) {
-            Log.w(TAG, "copyExifOrientation", e);
+            MLog.getIns().e(TAG + "copyExifOrientation", e);
         }
     }
 }

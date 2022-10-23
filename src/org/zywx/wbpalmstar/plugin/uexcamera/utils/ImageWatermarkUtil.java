@@ -10,8 +10,8 @@ import android.graphics.Paint;
 import android.graphics.Rect;
 import android.media.ExifInterface;
 import android.text.TextUtils;
-import android.util.Log;
 
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.log.MLog;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.WatermarkOptionsVO;
 
 /**
@@ -62,7 +62,7 @@ public class ImageWatermarkUtil {
             }
         }
         if (result != null && sourceBitmap != null) {
-            Log.i(TAG, "watermark result is not null.");
+            MLog.getIns().i(TAG + "watermark result is not null.");
             if (!sourceBitmap.isRecycled()) {
                 sourceBitmap.recycle();
             }
