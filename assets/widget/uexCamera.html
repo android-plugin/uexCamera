@@ -31,6 +31,9 @@
         </div>
     </div>
     <div class="btncss" data-control="BOX">
+        <div class="button ub ub-ac bc-text-head ub-pc bc-btn" onclick="uexCameraCase.setLogFileOutput()">
+            设置开启日志文件输出（仅本次app启动生效）
+        </div>
         <div class="button ub ub-ac bc-text-head ub-pc bc-btn" onclick="uexCameraCase.open()">
             打开系统相机
         </div>
@@ -96,6 +99,13 @@
         uexCamera.onPermissionDenied = function (data) {
           alert("uexCamera.onPermissionDenied");
         };
+      },
+      // 设置开启日志文件输出（仅本次app启动生效）
+      // 日志输出位置取决于当前权限获取情况。
+      // 如果用户授予了外部存储访问权限，则存储在/公共存储空间/widgetone/log/目录下；
+      // 否则存储在/公共存储空间/Android/data/包名/files/appcanlog/目录下。注意：此目录在Android11以上的系统中可能无法使用系统内置的文件管理查看目录内容，即无法提取日志，此为系统限制没有什么办法。
+      setLogFileOutput: function () {
+        uexCamera.setLogFileOutput('true');
       },
 
       open: function () {
