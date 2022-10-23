@@ -138,7 +138,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                 isPermissionGranted = false;
                 break;
             }
-            if (!PermissionUtil.isNeedStoragePermission(mTempPath.getAbsolutePath())) {
+            // 判断临时图片路径的位置是否需要申请存储权限
+            if (!PermissionUtil.isNeedStoragePermission(mTempPath!= null ? mTempPath.getAbsolutePath() : "")) {
                 break;
             }
         }
