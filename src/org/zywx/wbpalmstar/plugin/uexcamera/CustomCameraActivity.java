@@ -85,6 +85,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	private Button mBtnFlash1;
 	private Button mBtnFlash2;
 	private Button mBtnFlash3;
+	private Button mBtnFlash4;
 	private ImageView mIvPreShow;
 
 	// Camera相关
@@ -122,8 +123,10 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					isOpenFlash = false;
 					mBtnFlash2.setVisibility(View.INVISIBLE);
 					mBtnFlash3.setVisibility(View.INVISIBLE);
+					mBtnFlash4.setVisibility(View.INVISIBLE);
 					Log.d("visible", " after close flash view,bts visible is" + mBtnFlash2.getVisibility() + " ,"
-							+ mBtnFlash3.getVisibility());
+							+ mBtnFlash3.getVisibility() + " ,"
+							+ mBtnFlash4.getVisibility());
 				}
 			}
 			super.handleMessage(msg);
@@ -185,11 +188,13 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		mBtnFlash1 = (Button) findViewById(CRes.plugin_camera_bt_flash1);
 		mBtnFlash2 = (Button) findViewById(CRes.plugin_camera_bt_flash2);
 		mBtnFlash3 = (Button) findViewById(CRes.plugin_camera_bt_flash3);
+		mBtnFlash4 = (Button) findViewById(CRes.plugin_camera_bt_flash4);
 
 		flashDrawableIds = new ArrayList<Integer>();
 		flashDrawableIds.add(Integer.valueOf(CRes.plugin_camera_flash_drawale_auto));
 		flashDrawableIds.add(Integer.valueOf(CRes.plugin_camera_flash_drawale_open));
 		flashDrawableIds.add(Integer.valueOf(CRes.plugin_camera_flash_drawale_close));
+		flashDrawableIds.add(Integer.valueOf(CRes.plugin_camera_flash_drawale_torch));
 
 		mBtnFlash1.setOnClickListener(new OnClickListener() {
 
@@ -198,15 +203,17 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				if (isOpenFlash) {
 					updateFlashButtonState(0);
 					Log.d("visible", " when open,after click flash1 view,bts visible is" + mBtnFlash2.getVisibility()
-							+ " ," + mBtnFlash3.getVisibility());
+							+ " ," + mBtnFlash3.getVisibility() + " ," + mBtnFlash4.getVisibility());
 				} else {
 					isOpenFlash = true;
 					mBtnFlash2.setVisibility(View.VISIBLE);
 					mBtnFlash3.setVisibility(View.VISIBLE);
+					mBtnFlash4.setVisibility(View.VISIBLE);
 					mBtnFlash2.bringToFront();
 					mBtnFlash3.bringToFront();
+					mBtnFlash4.bringToFront();
 					Log.d("visible", "when close, after click flash1 view,bts visible is" + mBtnFlash2.getVisibility()
-							+ " ," + mBtnFlash3.getVisibility());
+							+ " ," + mBtnFlash3.getVisibility() + " ," + mBtnFlash4.getVisibility());
 					mHandler.sendEmptyMessageDelayed(NEED_CLOSE_FLASH_BTS, 4000);
 				}
 			}
@@ -223,6 +230,13 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			public void onClick(View v) {
 				// TODO Auto-generated method stub
 				updateFlashButtonState(2);
+			}
+		});
+		mBtnFlash4.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				// TODO Auto-generated method stub
+				updateFlashButtonState(3);
 			}
 		});
 
@@ -314,7 +328,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		view_focus = (View) findViewById(CRes.plugin_camera_view_focus);
 		mSurfaceView.setOnTouchListener(onTouchListener);
 		Log.d("visible", " after oncreate flash view,bts visible is" + mBtnFlash2.getVisibility() + " ,"
-				+ mBtnFlash3.getVisibility());
+				+ mBtnFlash3.getVisibility() + " ,"
+				+ mBtnFlash4.getVisibility());
 	}
 
 	protected void onOrientationChanged(int orientation) {
@@ -355,6 +370,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		mBtnFlash1.setRotation(orientation);
 		mBtnFlash2.setRotation(orientation);
 		mBtnFlash3.setRotation(orientation);
+		mBtnFlash4.setRotation(orientation);
 		mIvPreShow.setRotation(orientation);
 	}
 
@@ -363,6 +379,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		mHandler.removeMessages(NEED_CLOSE_FLASH_BTS);
 		mBtnFlash2.setVisibility(View.INVISIBLE);
 		mBtnFlash3.setVisibility(View.INVISIBLE);
+		mBtnFlash4.setVisibility(View.INVISIBLE);
 
 		Integer i = flashDrawableIds.get(index);
 		flashDrawableIds.remove(index);
@@ -370,6 +387,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		mBtnFlash1.setBackgroundResource(flashDrawableIds.get(0));
 		mBtnFlash2.setBackgroundResource(flashDrawableIds.get(1));
 		mBtnFlash3.setBackgroundResource(flashDrawableIds.get(2));
+		mBtnFlash4.setBackgroundResource(flashDrawableIds.get(3));
 		checkFlash(i);
 
 	}
@@ -384,6 +402,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				par.setFlashMode(Parameters.FLASH_MODE_ON);
 			} else if (j == CRes.plugin_camera_flash_drawale_close) {
 				par.setFlashMode(Parameters.FLASH_MODE_OFF);
+			} else if (j == CRes.plugin_camera_flash_drawale_torch) {
+				par.setFlashMode(Parameters.FLASH_MODE_TORCH);
 			}
 			mCamera.setParameters(par);
 		} catch (Exception e) {
@@ -467,6 +487,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			mBtnFlash1.setVisibility(View.INVISIBLE);
 			mBtnFlash2.setVisibility(View.INVISIBLE);
 			mBtnFlash3.setVisibility(View.INVISIBLE);
+			mBtnFlash4.setVisibility(View.INVISIBLE);
 		} else {
 			mBtnFlash1.setVisibility(View.VISIBLE);
 		}

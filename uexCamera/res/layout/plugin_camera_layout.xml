@@ -66,7 +66,7 @@
 
         <LinearLayout
             android:layout_width="wrap_content"
-            android:layout_height="200dp"
+            android:layout_height="278dp"
             android:layout_below="@id/plugin_camera_bt_flash1"
             android:orientation="vertical" >
 
@@ -85,6 +85,14 @@
                 android:layout_marginLeft="18dp"
                 android:layout_marginTop="42dp"
                 android:background="@drawable/plugin_camera_flash_close_selector" />
+
+            <Button
+                android:id="@+id/plugin_camera_bt_flash4"
+                android:layout_width="72dp"
+                android:layout_height="36dp"
+                android:layout_marginLeft="18dp"
+                android:layout_marginTop="42dp"
+                android:background="@drawable/plugin_camera_flash_torch_selector" />
         </LinearLayout>
 
         <ImageView

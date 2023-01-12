@@ -1,9 +1,9 @@
 package org.zywx.wbpalmstar.plugin.uexcamera;
 
-import java.util.Locale;
-
 import android.content.Context;
 import android.content.res.Resources;
+
+import java.util.Locale;
 
 public class CRes {
 	public static int plugin_camera_take_pic;
@@ -25,9 +25,11 @@ public class CRes {
 	public static int plugin_camera_bt_flash1;
 	public static int plugin_camera_bt_flash2;
 	public static int plugin_camera_bt_flash3;
+	public static int plugin_camera_bt_flash4;
 	public static int plugin_camera_flash_drawale_auto;
 	public static int plugin_camera_flash_drawale_open;
 	public static int plugin_camera_flash_drawale_close;
+	public static int plugin_camera_flash_drawale_torch;
 	public static int plugin_camera_view_focus;
 	public static int plugin_camera_view_focusing_bg;
 	public static int plugin_camera_view_focus_fail_bg;
@@ -50,6 +52,7 @@ public class CRes {
 		plugin_camera_flash_drawale_auto = res.getIdentifier("plugin_camera_flash_auto_selector", "drawable", packg);
 		plugin_camera_flash_drawale_open = res.getIdentifier("plugin_camera_flash_open_selector", "drawable", packg);
 		plugin_camera_flash_drawale_close = res.getIdentifier("plugin_camera_flash_close_selector", "drawable", packg);
+		plugin_camera_flash_drawale_torch = res.getIdentifier("plugin_camera_flash_torch_selector", "drawable", packg);
 		plugin_camera_view_focusing_bg = res.getIdentifier("plugin_camera_focus_focusing", "drawable", packg);
 		plugin_camera_view_focus_fail_bg = res.getIdentifier("plugin_camera_focus_failed", "drawable", packg);
 		plugin_camera_view_focused_bg = res.getIdentifier("plugin_camera_focus_focused", "drawable", packg);
@@ -57,6 +60,7 @@ public class CRes {
 		plugin_camera_bt_flash1 = res.getIdentifier("plugin_camera_bt_flash1", "id", packg);
 		plugin_camera_bt_flash2 = res.getIdentifier("plugin_camera_bt_flash2", "id", packg);
 		plugin_camera_bt_flash3 = res.getIdentifier("plugin_camera_bt_flash3", "id", packg);
+		plugin_camera_bt_flash4 = res.getIdentifier("plugin_camera_bt_flash4", "id", packg);
 		plugin_camera_view_focus = res.getIdentifier("plugin_camera_view_focus", "id", packg);
 		beep = res.getIdentifier("beep", "raw", packg);
 		app_name = res.getIdentifier("app_name", "string", packg);
