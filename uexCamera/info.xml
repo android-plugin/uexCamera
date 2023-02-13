@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="4.3.17" build="2023011301">
-        <info>17:自定义相机增加闪光灯常量模式切换</info>
+        uexName="uexCamera" version="4.3.18" build="2023021401">
+        <info>18:修复自定义相机拍照图片小于指定压缩大小时会导致图片无法生成文件的问题</info>
+        <build>17:自定义相机增加闪光灯常量模式切换</build>
         <build>16:增加setLogFileOutput接口用于控制输出文件日志；修复系统相机打开时申请权限后会闪退的问题</build>
         <build>15:增加添加水印接口单独用于给图片增加水印</build>
         <build>14.5:自定义相机修复水印字体大小无法调整问题</build>
