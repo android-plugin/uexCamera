@@ -63,7 +63,7 @@ public class FileUtil {
 		File file = new File(filePath);
 		if (!file.exists()) {
 			MLog.getIns().i(TAG + "【checkFilePath】	file.exists() == false 照片不存在");
-			return file.mkdirs();
+			return false;
 		}
 		MLog.getIns().i(TAG + "【checkFilePath】	file.exists() == true");
 		return true;

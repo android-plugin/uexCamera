@@ -7,6 +7,7 @@ import android.graphics.Matrix;
 import android.graphics.Rect;
 
 import org.zywx.wbpalmstar.base.BDebug;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.log.MLog;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -119,10 +120,10 @@ public class BitmapUtil {
 	 * @param targetSize
 	 */
 	public static Bitmap compressBmpFileToTargetSize(byte[] bitmapData, long targetSize) {
-		BDebug.i(TAG, String.format(Locale.US, "compressBmpFileToTargetSize start file.length():%d", bitmapData.length));
-		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		MLog.getIns().i(TAG, String.format(Locale.US, "compressBmpFileToTargetSize start file.length():%d", bitmapData.length));
 		Bitmap finalResult = null;
 		if (bitmapData.length > targetSize) {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
 			// 每次宽高各缩小一半
 			int ratio = 2;
 			// 获取图片原始宽高
@@ -146,8 +147,11 @@ public class BitmapUtil {
 				result = generateScaledBmp(result, targetWidth, targetHeight, baos, quality);
 			}
 			finalResult = result;
+			MLog.getIns().i(TAG, String.format(Locale.US, "compressBmpFileToTargetSize end baos.size():%d", baos.size()));
+		} else {
+			MLog.getIns().i(TAG, "bitmapData.length <= targetSize, 无需压缩");
+			finalResult = BitmapFactory.decodeByteArray(bitmapData, 0, bitmapData.length);
 		}
-		BDebug.i(TAG, String.format(Locale.US, "compressBmpFileToTargetSize end baos.size():%d", baos.size()));
 		return finalResult;
 	}
 
