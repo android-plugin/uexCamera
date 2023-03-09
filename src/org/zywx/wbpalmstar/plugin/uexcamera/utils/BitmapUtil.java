@@ -250,6 +250,35 @@ public class BitmapUtil {
 		return bitmap;
 	}
 
+	public static Bitmap cropBitmap(Bitmap bitmap, double targetRatio) {
+		int width = bitmap.getWidth();
+		int height = bitmap.getHeight();
+		double ratio = (double) width / height;
+
+		if (ratio != targetRatio) {
+			int newWidth, newHeight, x, y;
+
+			if (ratio > targetRatio) {  // 拍摄照片更宽，需要裁剪高度
+				newWidth = (int) (height * targetRatio);
+				newHeight = height;
+				x = (width - newWidth) / 2;
+				y = 0;
+			} else {  // 拍摄照片更窄，需要裁剪宽度
+				newWidth = width;
+				newHeight = (int) (width / targetRatio);
+				x = 0;
+				y = (height - newHeight) / 2;
+			}
+			MLog.getIns().i(TAG, String.format(Locale.US, "cropBitmap width:%d, height:%d, ratio:%f, newWidth:%d, newHeight:%d, x:%d, y:%d", width, height, ratio, newWidth, newHeight, x, y));
+
+			Bitmap croppedBitmap = Bitmap.createBitmap(bitmap, x, y, newWidth, newHeight);
+			bitmap.recycle();
+			return croppedBitmap;
+		}
+
+		return bitmap;
+	}
+
 
 
 }

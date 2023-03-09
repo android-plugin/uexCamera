@@ -60,6 +60,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.nio.ByteBuffer;
 import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
@@ -113,6 +114,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	private OrientationEventListener orientationEventListener = null;
 	private int current_orientation = 0;
 	private int picture_orientation = 0;
+
+	private boolean isUseLargerImageSize;
 
 	@SuppressLint("HandlerLeak")
 	private Handler mHandler = new Handler() {
@@ -517,14 +520,38 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		DisplayMetrics dm = new DisplayMetrics();
 		getWindowManager().getDefaultDisplay().getMetrics(dm);
 		double dmFormat = getFormat(dm.heightPixels, dm.widthPixels);
+		int maxWidth = 0, maxHeight = 0;
+		Camera.Size maxFitSize = null;
+		// 优先选取比例相近的
 		for (Camera.Size size : sizes) {
 			double abs = Math.abs(dmFormat - getFormat(size.width, size.height));
-			if (abs == 0.0d || abs == 0.1d) {
-				return size;
+			if (abs <= 0.1d) {
+				if (size.width > maxWidth && size.height > maxHeight) {
+					maxWidth = size.width;
+					maxHeight = size.height;
+					maxFitSize = size;
+					MLog.getIns().i(TAG, "maxFitSize:" + maxFitSize.width + "x" + maxFitSize.height);
+				}
 			}
 		}
-		return sizes.get(0);
+		// 如果没有比例相近的，选取最大的
+		if (maxFitSize == null) {
+			for (Camera.Size size : sizes) {
+				if (size.width > maxWidth && size.height > maxHeight) {
+					maxWidth = size.width;
+					maxHeight = size.height;
+					maxFitSize = size;
+					MLog.getIns().i(TAG, "maxFitSize-isUseLargerImageSize:" + maxFitSize.width + "x" + maxFitSize.height);
+					isUseLargerImageSize = true;
+				}
+			}
+		}
+		if (maxFitSize == null) {
+			maxFitSize = sizes.get(0);
+		}
+		return maxFitSize;
 	}
+
 
 	private double getFormat(int formatX, int formatY) {
 		DecimalFormat format = new DecimalFormat("#.0");
@@ -627,6 +654,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			Bitmap bm = null;
 			final byte[] data = params[0];
 			mPictureBytesData = data;
+//			mPictureBytesData = processLargeImage(data);
 //			saveImage(mPictureBytesData);
 			bm = createThumbnail(data);
 			return bm;
@@ -642,6 +670,22 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			Log.d(TAG, " after take pic mPreviewing changed to :" + mPreviewing);
 			Log.d(TAG, "onPostExecute  end run");
 		}
+	}
+
+	private byte[] processLargeImage(byte[] data) {
+		// 如果使用了大尺寸的图片，即没有找到与手机屏幕比例相近的图片，那么需要对图片进行裁剪
+		if (isUseLargerImageSize) {
+			DisplayMetrics dm = new DisplayMetrics();
+			getWindowManager().getDefaultDisplay().getMetrics(dm);
+			double dmFormat = getFormat(dm.heightPixels, dm.widthPixels);
+			Bitmap originBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
+			Bitmap cropBitmap = BitmapUtil.cropBitmap(originBitmap, dmFormat);
+			int bytes = cropBitmap.getByteCount();
+			ByteBuffer buffer = ByteBuffer.allocate(bytes);
+			cropBitmap.copyPixelsToBuffer(buffer);
+			data = buffer.array();
+		}
+		return data;
 	}
 
 	private void setIvPreShowBitmap(Bitmap bm) {
@@ -679,6 +723,15 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			BitmapFactory.Options options = new BitmapFactory.Options();
 			options.inSampleSize = inSampleSize;
 			bm = BitmapFactory.decodeByteArray(data, 0, data.length, options);
+			if (this.isUseLargerImageSize) {
+				DisplayMetrics dm = new DisplayMetrics();
+				getWindowManager().getDefaultDisplay().getMetrics(dm);
+				double dmFormat = getFormat(dm.heightPixels, dm.widthPixels);
+				Bitmap newBitmap = BitmapUtil.cropBitmap(bm, dmFormat);
+				bm.recycle();
+				bm = newBitmap;
+				MLog.getIns().i(TAG, "createThumbnail isUseLargerImageSize is true, cropBitmap");
+			}
 			bm = BitmapUtil.rotate(bm, degree);
 		} catch (Exception e) {
 			MLog.getIns().e(TAG + "createThumbnail exception", e);
@@ -698,6 +751,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			}
 		}
 		ExifInterface originExif = ExifUtil.getExifInfo(data);
+		// note: 压缩情况下会处理isUseLargerImageSize为true的大照片剪裁问题，不压缩的话不处理
 		if (!(openInternalVO == null
 				|| openInternalVO.getCompressOptions() == null
 				|| openInternalVO.getCompressOptions().getIsCompress() == 0)) {
@@ -726,10 +780,28 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 						MLog.getIns().w(TAG + "compress quality is invalid: " + quality + ". change it to 100");
 					}
 				}
+				if (this.isUseLargerImageSize) {
+					DisplayMetrics dm = new DisplayMetrics();
+					getWindowManager().getDefaultDisplay().getMetrics(dm);
+					double dmFormat = getFormat(dm.heightPixels, dm.widthPixels);
+					Bitmap newBitmap = BitmapUtil.cropBitmap(bm, dmFormat);
+					bm.recycle();
+					bm = newBitmap;
+					MLog.getIns().i(TAG, "saveImage isUseLargerImageSize is true, cropBitmap");
+				}
 			} else {
 				// 非0情况下，非1非2，目前只有3的情况，即给定目标文件大小，循环压缩到指定大小。
 				long targetSize = openInternalVO.getCompressOptions().getFileSize();
 				bm = BitmapUtil.compressBmpFileToTargetSize(data, targetSize);
+				if (this.isUseLargerImageSize) {
+					DisplayMetrics dm = new DisplayMetrics();
+					getWindowManager().getDefaultDisplay().getMetrics(dm);
+					double dmFormat = getFormat(dm.heightPixels, dm.widthPixels);
+					Bitmap newBitmap = BitmapUtil.cropBitmap(bm, dmFormat);
+					bm.recycle();
+					bm = newBitmap;
+					MLog.getIns().i(TAG, "saveImage compress-3 isUseLargerImageSize is true, cropBitmap");
+				}
 			}
 			try {
 				if (bm != null) {
