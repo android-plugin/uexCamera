@@ -32,6 +32,8 @@ public class BitmapUtil {
 		final int height = options.outHeight;
 		final int width = options.outWidth;
 
+		MLog.getIns().i(TAG, "size log: 原始图片的高度和宽度:height:" + height + ",width:" + width);
+
 		int inSampleSize = 1;
 
 		if (height > reqHeight || width > reqWidth) {
@@ -256,17 +258,22 @@ public class BitmapUtil {
 		double ratio = (double) width / height;
 
 		if (ratio != targetRatio) {
+			MLog.getIns().i(TAG, String.format(Locale.US, " cropBitmap width:%d, height:%d, ratio:%f, targetRatio:%f", width, height, ratio, targetRatio));
 			int newWidth, newHeight, x, y;
 
-			if (ratio > targetRatio) {  // 拍摄照片更宽，需要裁剪高度
+			if (ratio > targetRatio) {
+				// 拍摄照片更宽，需要裁剪宽度，而高度不变。因此用高度和目标比例来算出来最终的宽度
 				newWidth = (int) (height * targetRatio);
 				newHeight = height;
+				// 从中间裁剪
 				x = (width - newWidth) / 2;
 				y = 0;
-			} else {  // 拍摄照片更窄，需要裁剪宽度
+			} else {
+				// 拍摄照片更高，需要裁剪高度，而宽度不变。因此用宽度和目标比例来算出来最终的高度
 				newWidth = width;
 				newHeight = (int) (width / targetRatio);
 				x = 0;
+				// 从中间裁剪
 				y = (height - newHeight) / 2;
 			}
 			MLog.getIns().i(TAG, String.format(Locale.US, "cropBitmap width:%d, height:%d, ratio:%f, newWidth:%d, newHeight:%d, x:%d, y:%d", width, height, ratio, newWidth, newHeight, x, y));

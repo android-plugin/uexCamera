@@ -46,6 +46,7 @@ import android.widget.ImageView.ScaleType;
 import android.widget.Toast;
 
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.CameraUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.ExifUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.FileUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.ImageWatermarkUtil;
@@ -504,9 +505,15 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		if (parameters.isZoomSupported()) {
 			parameters.setZoom(parameters.getZoom());// 测试通过
 		}
+		// 打印surfaceView的宽高
+		MLog.getIns().i(TAG, "size log: surfaceView width:" + mSurfaceView.getWidth() + ",height:" + mSurfaceView.getHeight());
 		Camera.Size previewSize = getFitParametersSize(parameters.getSupportedPreviewSizes());
+		// 打印Size的宽高
+		MLog.getIns().i(TAG, "size log: previewSize width:" + previewSize.width + ",height:" + previewSize.height);
 		parameters.setPreviewSize(previewSize.width, previewSize.height);
-		Camera.Size pictureSize = getFitParametersSize(parameters.getSupportedPictureSizes());
+		Camera.Size pictureSize = getFitParametersSize(parameters.getSupportedPictureSizes(), previewSize.width, previewSize.height);
+		// 打印Size的宽高
+		MLog.getIns().i(TAG, "size log: pictureSize width:" + pictureSize.width + ",height:" + pictureSize.height);
 		parameters.setPictureSize(pictureSize.width, pictureSize.height);
 
 		try {
@@ -517,9 +524,13 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	}
 
 	private Camera.Size getFitParametersSize(List<Camera.Size> sizes) {
-		DisplayMetrics dm = new DisplayMetrics();
-		getWindowManager().getDefaultDisplay().getMetrics(dm);
-		double dmFormat = getFormat(dm.heightPixels, dm.widthPixels);
+		CameraUtil.Size targetSize = CameraUtil.getTargetSize(mSurfaceView);
+		// 因为是相机会旋转90度，因此这里会交换宽高
+		return getFitParametersSize(sizes, targetSize.height, targetSize.width);
+	}
+
+	private Camera.Size getFitParametersSize(List<Camera.Size> sizes, int targetWidth, int targetHeight) {
+		double dmFormat = getFormat(targetWidth, targetHeight);
 		int maxWidth = 0, maxHeight = 0;
 		Camera.Size maxFitSize = null;
 		// 优先选取比例相近的
@@ -530,11 +541,27 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					maxWidth = size.width;
 					maxHeight = size.height;
 					maxFitSize = size;
-					MLog.getIns().i(TAG, "maxFitSize:" + maxFitSize.width + "x" + maxFitSize.height);
+					MLog.getIns().i(TAG, "size log: abs<0.1 FitSize:" + maxFitSize.width + "x" + maxFitSize.height);
 				}
 			}
 		}
-		// 如果没有比例相近的，选取最大的
+		// 如果没有比例相近的，选取abs最小的，并且宽高都大于目标宽高的
+		if (maxFitSize == null) {
+			double minAbs = Double.MAX_VALUE;
+			for (Camera.Size size : sizes) {
+				// 打印所有的尺寸宽高
+				MLog.getIns().i(TAG, "size log: supported size width:" + size.width + ",height:" + size.height);
+				double abs = Math.abs(dmFormat - getFormat(size.width, size.height));
+				if (abs < minAbs && size.width > targetWidth && size.height > targetHeight) {
+					minAbs = abs;
+					maxWidth = size.width;
+					maxHeight = size.height;
+					maxFitSize = size;
+					MLog.getIns().i(TAG, "size log: min abs FitSize:" + maxFitSize.width + "x" + maxFitSize.height);
+				}
+			}
+		}
+		// 如果仍然没有比例相近的，取最大的宽高
 		if (maxFitSize == null) {
 			for (Camera.Size size : sizes) {
 				if (size.width > maxWidth && size.height > maxHeight) {
@@ -554,7 +581,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 
 
 	private double getFormat(int formatX, int formatY) {
-		DecimalFormat format = new DecimalFormat("#.0");
+		DecimalFormat format = new DecimalFormat("#.00");
 		double result = Double.parseDouble(format.format((double) formatX / (double) formatY));
 		return result;
 	}
@@ -675,9 +702,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	private byte[] processLargeImage(byte[] data) {
 		// 如果使用了大尺寸的图片，即没有找到与手机屏幕比例相近的图片，那么需要对图片进行裁剪
 		if (isUseLargerImageSize) {
-			DisplayMetrics dm = new DisplayMetrics();
-			getWindowManager().getDefaultDisplay().getMetrics(dm);
-			double dmFormat = getFormat(dm.heightPixels, dm.widthPixels);
+			CameraUtil.Size targetSize = CameraUtil.getTargetSize(mSurfaceView);
+			double dmFormat = getFormat(targetSize.height, targetSize.width);
 			Bitmap originBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
 			Bitmap cropBitmap = BitmapUtil.cropBitmap(originBitmap, dmFormat);
 			int bytes = cropBitmap.getByteCount();
@@ -724,9 +750,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			options.inSampleSize = inSampleSize;
 			bm = BitmapFactory.decodeByteArray(data, 0, data.length, options);
 			if (this.isUseLargerImageSize) {
-				DisplayMetrics dm = new DisplayMetrics();
-				getWindowManager().getDefaultDisplay().getMetrics(dm);
-				double dmFormat = getFormat(dm.heightPixels, dm.widthPixels);
+				CameraUtil.Size targetSize = CameraUtil.getTargetSize(mSurfaceView);
+				double dmFormat = getFormat(targetSize.height, targetSize.width);
 				Bitmap newBitmap = BitmapUtil.cropBitmap(bm, dmFormat);
 				bm.recycle();
 				bm = newBitmap;
@@ -781,9 +806,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					}
 				}
 				if (this.isUseLargerImageSize) {
-					DisplayMetrics dm = new DisplayMetrics();
-					getWindowManager().getDefaultDisplay().getMetrics(dm);
-					double dmFormat = getFormat(dm.heightPixels, dm.widthPixels);
+					CameraUtil.Size targetSize = CameraUtil.getTargetSize(mSurfaceView);
+					double dmFormat = getFormat(targetSize.height, targetSize.width);
 					Bitmap newBitmap = BitmapUtil.cropBitmap(bm, dmFormat);
 					bm.recycle();
 					bm = newBitmap;
@@ -791,12 +815,11 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				}
 			} else {
 				// 非0情况下，非1非2，目前只有3的情况，即给定目标文件大小，循环压缩到指定大小。
-				long targetSize = openInternalVO.getCompressOptions().getFileSize();
-				bm = BitmapUtil.compressBmpFileToTargetSize(data, targetSize);
+				long targetSizeLong = openInternalVO.getCompressOptions().getFileSize();
+				bm = BitmapUtil.compressBmpFileToTargetSize(data, targetSizeLong);
 				if (this.isUseLargerImageSize) {
-					DisplayMetrics dm = new DisplayMetrics();
-					getWindowManager().getDefaultDisplay().getMetrics(dm);
-					double dmFormat = getFormat(dm.heightPixels, dm.widthPixels);
+					CameraUtil.Size targetSize = CameraUtil.getTargetSize(mSurfaceView);
+					double dmFormat = getFormat(targetSize.height, targetSize.width);
 					Bitmap newBitmap = BitmapUtil.cropBitmap(bm, dmFormat);
 					bm.recycle();
 					bm = newBitmap;

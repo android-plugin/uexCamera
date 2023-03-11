@@ -151,11 +151,11 @@ public class MLog {
 	}
 
 	public void i(String tag, String str) {
-		i(tag + str);
+		i(tag + " " + str);
 	}
 
 	public void e(String tag, String str) {
-		e(tag + str);
+		e(tag + " " + str);
 	}
 
 	/**
