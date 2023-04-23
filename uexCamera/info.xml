@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="4.3.19.2" build="2023031201">
-        <info>19.2:修复自定义相机拍照可能会在个别设备上导致图片被截取的问题（实际是分辨率不匹配问题）</info>
+        uexName="uexCamera" version="4.3.20" build="2023042401">
+        <info>20:修复自定义相机拍照后，点击完成按钮点击过快导致图片文件存储逻辑错误被删除的问题</info>
+        <build>19.2:修复自定义相机拍照可能会在个别设备上导致图片被截取的问题（实际是分辨率不匹配问题）</build>
         <build>18:修复自定义相机拍照图片小于指定压缩大小时会导致图片无法生成文件的问题</build>
         <build>17:自定义相机增加闪光灯常量模式切换</build>
         <build>16:增加setLogFileOutput接口用于控制输出文件日志；修复系统相机打开时申请权限后会闪退的问题</build>
