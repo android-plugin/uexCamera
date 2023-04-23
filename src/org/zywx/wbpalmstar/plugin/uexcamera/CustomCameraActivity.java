@@ -3,6 +3,8 @@ package org.zywx.wbpalmstar.plugin.uexcamera;
 import android.R.integer;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.Dialog;
+import android.app.ProgressDialog;
 import android.content.ContentValues;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
@@ -117,6 +119,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	private int picture_orientation = 0;
 
 	private boolean isUseLargerImageSize;
+
+	private Dialog mLoadingDialog;
 
 	@SuppressLint("HandlerLeak")
 	private Handler mHandler = new Handler() {
@@ -257,29 +261,40 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			private boolean isRunning = false;
 
 			@Override
-			public void onClick(View v) {
-				// TODO 增加显示进度提示框等待
-				if (isHasPic && !isRunning) {
+			public synchronized void onClick(View v) {
+				// 增加显示进度提示框等待
+				if (isHasPic && !isRunning && mLoadingDialog == null && mPictureBytesData != null) {
+					MLog.getIns().i("CustomCameraActivity", "-------isRunning is false, mPictureBytesData != null");
+
 					isRunning = true;
+
+					mLoadingDialog = ProgressDialog.show(CustomCameraActivity.this, "", "正在处理拍照，请稍候", true);
 					mExecutorService.submit(new Runnable() {
 						@Override
 						public void run() {
+							MLog.getIns().i("CustomCameraActivity", "-------正常点击，开始处理拍照");
 							saveImage(mPictureBytesData);
 							mPictureBytesData = null;
 							Handler uiThread = new Handler(Looper.getMainLooper());
 							uiThread.post(new Runnable() {
 								@Override
 								public void run() {
-									// TODO 关闭进度提示框等待
+									// 关闭进度提示框等待
 									// 更新你的UI
 									setResult(RESULT_OK);
 									onPause();
 									finish();
 									isRunning = false;
+									if (mLoadingDialog != null) {
+										mLoadingDialog.dismiss();
+										mLoadingDialog = null;
+									}
 								}
 							});
 						}
 					});
+				} else {
+					MLog.getIns().i("CustomCameraActivity", "-------isRunning may be true, mPictureBytesData may be null, 无效点击");
 				}
 
 			}
