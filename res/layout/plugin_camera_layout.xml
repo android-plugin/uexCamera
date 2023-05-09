@@ -50,7 +50,10 @@
                 android:layout_width="72dp"
                 android:layout_height="72dp"
                 android:layout_centerInParent="true"
-                android:layout_margin="3dp"
+                android:layout_marginStart="3dp"
+                android:layout_marginTop="3dp"
+                android:layout_marginEnd="3dp"
+                android:layout_marginBottom="3dp"
                 android:background="@drawable/plugin_camera_bt_takepic_selector" />
         </RelativeLayout>
 

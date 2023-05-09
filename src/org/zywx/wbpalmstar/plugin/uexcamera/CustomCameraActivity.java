@@ -114,6 +114,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	private View view_focus;
 	private MODE mode = MODE.NONE;// 默认模式
 	private final int NEED_CLOSE_FLASH_BTS = 1;
+	private final int AUTO_FOCUS_AGAIN = 2;
 	private OrientationEventListener orientationEventListener = null;
 	private int current_orientation = 0;
 	private int picture_orientation = 0;
@@ -127,19 +128,31 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		@Override
 		public void handleMessage(Message msg) {
 			if (msg.what == NEED_CLOSE_FLASH_BTS) {
-				if (isOpenFlash) {
-					isOpenFlash = false;
-					mBtnFlash2.setVisibility(View.INVISIBLE);
-					mBtnFlash3.setVisibility(View.INVISIBLE);
-					mBtnFlash4.setVisibility(View.INVISIBLE);
-					Log.d("visible", " after close flash view,bts visible is" + mBtnFlash2.getVisibility() + " ,"
-							+ mBtnFlash3.getVisibility() + " ,"
-							+ mBtnFlash4.getVisibility());
+				try {
+					if (isOpenFlash) {
+						isOpenFlash = false;
+						mBtnFlash2.setVisibility(View.INVISIBLE);
+						mBtnFlash3.setVisibility(View.INVISIBLE);
+						mBtnFlash4.setVisibility(View.INVISIBLE);
+						Log.d("visible", " after close flash view,bts visible is" + mBtnFlash2.getVisibility() + " ,"
+								+ mBtnFlash3.getVisibility() + " ,"
+								+ mBtnFlash4.getVisibility());
+					}
+				} catch (Exception e) {
+					MLog.getIns().e(TAG, e);
+				}
+			} else if (msg.what == AUTO_FOCUS_AGAIN) {
+				try {
+					// 执行自动对焦
+					mCamera.autoFocus(CustomCameraActivity.this);
+				} catch (Exception e) {
+					MLog.getIns().e(TAG, e);
 				}
 			}
 			super.handleMessage(msg);
 		}
 	};
+	private String supportedFocusMode;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -302,7 +315,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		mBtnTakePic.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				if (mode == MODE.FOCUSFAIL || mode == MODE.FOCUSING || mCamera == null) {
+				if (!Parameters.FOCUS_MODE_CONTINUOUS_PICTURE.equals(supportedFocusMode) && (mode == MODE.FOCUSFAIL || mode == MODE.FOCUSING || mCamera == null)) {
+					Toast.makeText(CustomCameraActivity.this, "相机正在准备中，请稍候", Toast.LENGTH_SHORT).show();
 					return;
 				}
 				if (mPreviewing) {
@@ -371,8 +385,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			}
 		}
 		int rotation = getRotate();
-		Log.i(TAG,"onOrientationChanged orientation: " + orientation);
-		Log.i(TAG,"onOrientationChanged getRotate: " + rotation);
+//		Log.i(TAG,"onOrientationChanged orientation: " + orientation);
+//		Log.i(TAG,"onOrientationChanged getRotate: " + rotation);
 		if (null != mCamera) {
 			Camera.Parameters parameters = mCamera.getParameters();
 			parameters.setRotation(rotation);
@@ -438,6 +452,9 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				;
 		}
 		if (mCamera != null) {
+			if (mHandler != null) {
+				mHandler.removeCallbacksAndMessages(null);
+			}
 			mCamera.setPreviewCallback(null);
 			mCamera.stopPreview();
 			mCamera.release();
@@ -511,14 +528,19 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			mBtnFlash1.setVisibility(View.VISIBLE);
 		}
 
+		// 根据设备实际支持情况，设置不同的自动对焦模式。优先采用拍照持续对焦模式。
 		List<String> focusModes = parameters.getSupportedFocusModes();
-		if (focusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
+		if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
+			// Continuous picture mode is supported
+			parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+			supportedFocusMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE;
+			MLog.getIns().i(TAG, "focus mode is continuous picture!!!");
+		} else if (focusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
 			// Autofocus mode is supported
 			parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
-		}
-
-		if (parameters.isZoomSupported()) {
-			parameters.setZoom(parameters.getZoom());// 测试通过
+			MLog.getIns().i(TAG, "focus mode is auto!!!");
+		} else {
+			MLog.getIns().i(TAG, "focus mode is not supported!!!");
 		}
 		// 打印surfaceView的宽高
 		MLog.getIns().i(TAG, "size log: surfaceView width:" + mSurfaceView.getWidth() + ",height:" + mSurfaceView.getHeight());
@@ -530,7 +552,6 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		// 打印Size的宽高
 		MLog.getIns().i(TAG, "size log: pictureSize width:" + pictureSize.width + ",height:" + pictureSize.height);
 		parameters.setPictureSize(pictureSize.width, pictureSize.height);
-
 		try {
 			mCamera.setParameters(parameters);
 		} catch (Exception e) {
@@ -1034,12 +1055,17 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 
 	@Override
 	public void onAutoFocus(boolean success, Camera camera) {
+		MLog.getIns().i(TAG, "onAutoFocus success: " + success);
 		if (success) {
 			mode = MODE.FOCUSED;
 			view_focus.setBackgroundResource(CRes.plugin_camera_view_focused_bg);
 		} else {
 			mode = MODE.FOCUSFAIL;
 			view_focus.setBackgroundResource(CRes.plugin_camera_view_focus_fail_bg);
+			if (!Parameters.FOCUS_MODE_CONTINUOUS_PICTURE.equals(supportedFocusMode)) {
+				// 延时2秒再执行一次自动对焦
+				mHandler.sendEmptyMessageDelayed(AUTO_FOCUS_AGAIN, 2 * 1000);
+			}
 		}
 		setFocusView();
 	}
@@ -1111,7 +1137,21 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				}
 			}
 
-			parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+			// 根据设备实际支持情况，设置不同的自动对焦模式。优先采用拍照持续对焦模式。
+			List<String> focusModes = parameters.getSupportedFocusModes();
+			if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
+				// Continuous picture mode is supported
+				parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
+				supportedFocusMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE;
+				MLog.getIns().i(TAG, "focus mode is continuous picture!!!");
+			} else if (focusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
+				// Autofocus mode is supported
+				parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
+				MLog.getIns().i(TAG, "focus mode is auto!!!");
+			} else {
+				MLog.getIns().i(TAG, "focus mode is not supported!!!");
+			}
+
 			mCamera.setParameters(parameters);
 			mCamera.autoFocus(this);
 		} catch (Exception e) {
