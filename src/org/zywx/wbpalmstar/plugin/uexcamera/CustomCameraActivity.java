@@ -352,6 +352,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					}
 					initCameraParameters();
 					mCamera.startPreview();// 开始预览
+					mCamera.cancelAutoFocus();
 					mPreviewing = true;
 					Log.d("mPreviewing", "mPreviewing changed to :" + mPreviewing);
 				}
@@ -493,7 +494,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			mCamera.startPreview();
 			mPreviewing = true;
 			MLog.getIns().i("mPreviewing after inti camera mPreviewing changed to :" + mPreviewing);
-			mCamera.autoFocus(this);
+//			mHandler.sendEmptyMessage(AUTO_FOCUS_AGAIN);
+			mCamera.cancelAutoFocus();
 		} catch (Exception e) {
 			MLog.getIns().e(TAG + "initCamera", e);
 		}
@@ -729,6 +731,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			Log.d(TAG, "onPostExecute  start run");
 			setIvPreShowBitmap(bm);
 			mCamera.startPreview();
+			mCamera.cancelAutoFocus();
 			mPreviewing = true;
 			Log.d(TAG, " after take pic mPreviewing changed to :" + mPreviewing);
 			Log.d(TAG, "onPostExecute  end run");
@@ -1062,10 +1065,10 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		} else {
 			mode = MODE.FOCUSFAIL;
 			view_focus.setBackgroundResource(CRes.plugin_camera_view_focus_fail_bg);
-			if (!Parameters.FOCUS_MODE_CONTINUOUS_PICTURE.equals(supportedFocusMode)) {
-				// 延时2秒再执行一次自动对焦
-				mHandler.sendEmptyMessageDelayed(AUTO_FOCUS_AGAIN, 2 * 1000);
-			}
+//			if (!Parameters.FOCUS_MODE_CONTINUOUS_PICTURE.equals(supportedFocusMode)) {
+//				// 延时2秒再执行一次自动对焦
+//				mHandler.sendEmptyMessageDelayed(AUTO_FOCUS_AGAIN, 2 * 1000);
+//			}
 		}
 		setFocusView();
 	}
@@ -1136,24 +1139,15 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					parameters.setMeteringAreas(meteringAreas);
 				}
 			}
-
-			// 根据设备实际支持情况，设置不同的自动对焦模式。优先采用拍照持续对焦模式。
+			// 触摸手动对焦后，切换为自动对焦模式
 			List<String> focusModes = parameters.getSupportedFocusModes();
-			if (focusModes.contains(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE)) {
-				// Continuous picture mode is supported
-				parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE);
-				supportedFocusMode = Camera.Parameters.FOCUS_MODE_CONTINUOUS_PICTURE;
-				MLog.getIns().i(TAG, "focus mode is continuous picture!!!");
-			} else if (focusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
+			if (focusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
 				// Autofocus mode is supported
 				parameters.setFocusMode(Camera.Parameters.FOCUS_MODE_AUTO);
 				MLog.getIns().i(TAG, "focus mode is auto!!!");
-			} else {
-				MLog.getIns().i(TAG, "focus mode is not supported!!!");
 			}
-
 			mCamera.setParameters(parameters);
-			mCamera.autoFocus(this);
+			mHandler.sendEmptyMessage(AUTO_FOCUS_AGAIN);
 		} catch (Exception e) {
 			MLog.getIns().e(TAG + "focusOnTouch", e);
 		}
