@@ -22,6 +22,8 @@ public class CRes {
 	public static int plugin_camera_bt_changefacing;
 	public static int plugin_camera_iv_preshow;
 	public static int plugin_camera_surfaceview;
+
+	public static int bottombar;
 	public static int plugin_camera_bt_flash1;
 	public static int plugin_camera_bt_flash2;
 	public static int plugin_camera_bt_flash3;
@@ -48,6 +50,7 @@ public class CRes {
 		plugin_camera_bt_changefacing = res.getIdentifier("plugin_camera_bt_changefacing", "id", packg);
 		plugin_camera_iv_preshow = res.getIdentifier("plugin_camera_iv_preshow", "id", packg);
 		plugin_camera_surfaceview = res.getIdentifier("plugin_camera_surfaceview", "id", packg);
+		bottombar = res.getIdentifier("bottombar", "id", packg);
 
 		plugin_camera_flash_drawale_auto = res.getIdentifier("plugin_camera_flash_auto_selector", "drawable", packg);
 		plugin_camera_flash_drawale_open = res.getIdentifier("plugin_camera_flash_open_selector", "drawable", packg);

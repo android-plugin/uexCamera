@@ -3,6 +3,7 @@ package org.zywx.wbpalmstar.plugin.uexcamera.utils;
 import android.app.Activity;
 import android.util.DisplayMetrics;
 import android.view.SurfaceView;
+import android.view.View;
 
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.log.MLog;
 
@@ -43,6 +44,18 @@ public class CameraUtil {
         Size size = new Size();
         size.width = dm.widthPixels;
         size.height = dm.heightPixels;
+        return size;
+    }
+
+    public static Size getMaxTargetSize(Activity activity, View bottomView) {
+        Size size = getScreenSize(activity);
+        if (bottomView != null) {
+            // 计算屏幕高度与bottomView高度的差
+            int bottomViewHeight = bottomView.getHeight();
+            int screenHeight = size.height;
+            int diffHeight = screenHeight - bottomViewHeight;
+            size.height = diffHeight;
+        }
         return size;
     }
 }

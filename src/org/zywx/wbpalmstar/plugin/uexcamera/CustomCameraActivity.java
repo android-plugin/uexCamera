@@ -43,8 +43,10 @@ import android.view.View.OnTouchListener;
 import android.view.Window;
 import android.view.WindowManager;
 import android.widget.Button;
+import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
+import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
@@ -82,6 +84,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	
 	// View
 	public SurfaceView mSurfaceView;
+	private View mBottomBar;
 	private Button mBtnCancel;
 	private Button mBtnHandler;
 	private Button mBtnTakePic;
@@ -198,6 +201,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		};
 
 		mSurfaceView = (SurfaceView) findViewById(CRes.plugin_camera_surfaceview);
+		mBottomBar = (View) findViewById(CRes.bottombar);
 		mBtnCancel = (Button) findViewById(CRes.plugin_camera_bt_cancel);
 		mBtnHandler = (Button) findViewById(CRes.plugin_camera_bt_complete);
 		mBtnChangeFacing = (Button) findViewById(CRes.plugin_camera_bt_changefacing);
@@ -544,16 +548,23 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		} else {
 			MLog.getIns().i(TAG, "focus mode is not supported!!!");
 		}
+		// 获取屏幕高度，减去bottomBar的高度，就是剩余的surfaceView的最大区域（因为bottomBar是固定高度，因此计算比较准确）
+		CameraUtil.Size maxTargetSize = CameraUtil.getMaxTargetSize(this, mBottomBar);
+		// 打印最大预览区域高度
+		MLog.getIns().i(TAG, "size log: screen height:" + maxTargetSize.height);
 		// 打印surfaceView的宽高
 		MLog.getIns().i(TAG, "size log: surfaceView width:" + mSurfaceView.getWidth() + ",height:" + mSurfaceView.getHeight());
-		Camera.Size previewSize = getFitParametersSize(parameters.getSupportedPreviewSizes());
-		// 打印Size的宽高
+		// 根据预览区域的最大值，找到适合的相机分辨率
+		Camera.Size previewSize = getFitParametersSize(parameters.getSupportedPreviewSizes(), maxTargetSize.width, maxTargetSize.height);
 		MLog.getIns().i(TAG, "size log: previewSize width:" + previewSize.width + ",height:" + previewSize.height);
 		parameters.setPreviewSize(previewSize.width, previewSize.height);
+		// 根据预览分辨率，找到合适的输出图片分辨率
 		Camera.Size pictureSize = getFitParametersSize(parameters.getSupportedPictureSizes(), previewSize.width, previewSize.height);
-		// 打印Size的宽高
 		MLog.getIns().i(TAG, "size log: pictureSize width:" + pictureSize.width + ",height:" + pictureSize.height);
 		parameters.setPictureSize(pictureSize.width, pictureSize.height);
+		// 根据预览分辨率，调整surfaceView的高度，防止比例失调
+		int newSurfaceViewHeight = (int) (previewSize.width * mSurfaceView.getWidth() / previewSize.height);
+		mSurfaceView.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, newSurfaceViewHeight));
 		try {
 			mCamera.setParameters(parameters);
 		} catch (Exception e) {
@@ -571,18 +582,19 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		double dmFormat = getFormat(targetWidth, targetHeight);
 		int maxWidth = 0, maxHeight = 0;
 		Camera.Size maxFitSize = null;
+		// 不再优先比例，而是找最大值
 		// 优先选取比例相近的
-		for (Camera.Size size : sizes) {
-			double abs = Math.abs(dmFormat - getFormat(size.width, size.height));
-			if (abs <= 0.1d) {
-				if (size.width > maxWidth && size.height > maxHeight) {
-					maxWidth = size.width;
-					maxHeight = size.height;
-					maxFitSize = size;
-					MLog.getIns().i(TAG, "size log: abs<0.1 FitSize:" + maxFitSize.width + "x" + maxFitSize.height);
-				}
-			}
-		}
+//		for (Camera.Size size : sizes) {
+//			double abs = Math.abs(dmFormat - getFormat(size.width, size.height));
+//			if (abs <= 0.1d) {
+//				if (size.width > maxWidth && size.height > maxHeight) {
+//					maxWidth = size.width;
+//					maxHeight = size.height;
+//					maxFitSize = size;
+//					MLog.getIns().i(TAG, "size log: abs<0.1 FitSize:" + maxFitSize.width + "x" + maxFitSize.height);
+//				}
+//			}
+//		}
 		// 如果没有比例相近的，选取abs最小的，并且宽高都大于目标宽高的
 		if (maxFitSize == null) {
 			double minAbs = Double.MAX_VALUE;
@@ -599,8 +611,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				}
 			}
 		}
-		// 如果仍然没有比例相近的，取最大的宽高
-		if (maxFitSize == null) {
+		// 如果仍然没有比例相近的，或者分辨率太低，则取最大的宽高
+		if (maxFitSize == null || maxFitSize.width < targetWidth || maxFitSize.height < targetHeight) {
 			for (Camera.Size size : sizes) {
 				if (size.width > maxWidth && size.height > maxHeight) {
 					maxWidth = size.width;
