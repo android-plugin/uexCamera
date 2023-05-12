@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="4.3.22" build="2023051003">
-        <info>22:调整图片宽高选取逻辑，动态调整取景框</info>
+        uexName="uexCamera" version="4.3.23" build="2023051201">
+        <info>23:修复自定义相机分辨率比例选取逻辑异常导致的图片异常问题</info>
+        <build>22:调整图片宽高选取逻辑，动态调整取景框</build>
         <build>21.1:适配Honor机型相机启动后因为首次对焦失败导致无法拍照的问题</build>
         <build>20:修复自定义相机拍照后，点击完成按钮点击过快导致图片文件存储逻辑错误被删除的问题</build>
         <build>19.2:修复自定义相机拍照可能会在个别设备上导致图片被截取的问题（实际是分辨率不匹配问题）</build>
