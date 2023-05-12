@@ -555,11 +555,11 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		// 打印surfaceView的宽高
 		MLog.getIns().i(TAG, "size log: surfaceView width:" + mSurfaceView.getWidth() + ",height:" + mSurfaceView.getHeight());
 		// 根据预览区域的最大值，找到适合的相机分辨率
-		Camera.Size previewSize = getFitParametersSize(parameters.getSupportedPreviewSizes(), maxTargetSize.width, maxTargetSize.height);
+		Camera.Size previewSize = getFitParametersSize(parameters.getSupportedPreviewSizes(), maxTargetSize.height, maxTargetSize.width, true);
 		MLog.getIns().i(TAG, "size log: previewSize width:" + previewSize.width + ",height:" + previewSize.height);
 		parameters.setPreviewSize(previewSize.width, previewSize.height);
 		// 根据预览分辨率，找到合适的输出图片分辨率
-		Camera.Size pictureSize = getFitParametersSize(parameters.getSupportedPictureSizes(), previewSize.width, previewSize.height);
+		Camera.Size pictureSize = getFitParametersSize(parameters.getSupportedPictureSizes(), previewSize.height, previewSize.width, true);
 		MLog.getIns().i(TAG, "size log: pictureSize width:" + pictureSize.width + ",height:" + pictureSize.height);
 		parameters.setPictureSize(pictureSize.width, pictureSize.height);
 		// 根据预览分辨率，调整surfaceView的高度，防止比例失调
@@ -575,39 +575,41 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	private Camera.Size getFitParametersSize(List<Camera.Size> sizes) {
 		CameraUtil.Size targetSize = CameraUtil.getTargetSize(mSurfaceView);
 		// 因为是相机会旋转90度，因此这里会交换宽高
-		return getFitParametersSize(sizes, targetSize.height, targetSize.width);
+		return getFitParametersSize(sizes, targetSize.height, targetSize.width, true);
 	}
 
-	private Camera.Size getFitParametersSize(List<Camera.Size> sizes, int targetWidth, int targetHeight) {
+	private Camera.Size getFitParametersSize(List<Camera.Size> sizes, int targetWidth, int targetHeight, boolean isConsiderRatio) {
 		double dmFormat = getFormat(targetWidth, targetHeight);
 		int maxWidth = 0, maxHeight = 0;
 		Camera.Size maxFitSize = null;
 		// 不再优先比例，而是找最大值
-		// 优先选取比例相近的
-//		for (Camera.Size size : sizes) {
-//			double abs = Math.abs(dmFormat - getFormat(size.width, size.height));
-//			if (abs <= 0.1d) {
-//				if (size.width > maxWidth && size.height > maxHeight) {
-//					maxWidth = size.width;
-//					maxHeight = size.height;
-//					maxFitSize = size;
-//					MLog.getIns().i(TAG, "size log: abs<0.1 FitSize:" + maxFitSize.width + "x" + maxFitSize.height);
-//				}
-//			}
-//		}
-		// 如果没有比例相近的，选取abs最小的，并且宽高都大于目标宽高的
-		if (maxFitSize == null) {
-			double minAbs = Double.MAX_VALUE;
+		if (isConsiderRatio) {
+			// 优先选取比例相近的，从比例差在0.1以内的尺寸中，挑选一个最大的尺寸，尽量保证照片清晰
 			for (Camera.Size size : sizes) {
-				// 打印所有的尺寸宽高
-				MLog.getIns().i(TAG, "size log: supported size width:" + size.width + ",height:" + size.height);
 				double abs = Math.abs(dmFormat - getFormat(size.width, size.height));
-				if (abs < minAbs && size.width > targetWidth && size.height > targetHeight) {
-					minAbs = abs;
-					maxWidth = size.width;
-					maxHeight = size.height;
-					maxFitSize = size;
-					MLog.getIns().i(TAG, "size log: min abs FitSize:" + maxFitSize.width + "x" + maxFitSize.height);
+				if (abs <= 0.1d) {
+					if (size.width > maxWidth && size.height > maxHeight) {
+						maxWidth = size.width;
+						maxHeight = size.height;
+						maxFitSize = size;
+						MLog.getIns().i(TAG, "size log: abs<0.1 FitSize:" + maxFitSize.width + "x" + maxFitSize.height);
+					}
+				}
+			}
+			// 如果没有比例相近的（0.1以内的），选取abs最小的，并且宽高都大于目标宽高的
+			if (maxFitSize == null) {
+				double minAbs = Double.MAX_VALUE;
+				for (Camera.Size size : sizes) {
+					// 打印所有的尺寸宽高
+					MLog.getIns().i(TAG, "size log: supported size width:" + size.width + ",height:" + size.height);
+					double abs = Math.abs(dmFormat - getFormat(size.width, size.height));
+					if (abs < minAbs && size.width > targetWidth && size.height > targetHeight) {
+						minAbs = abs;
+						maxWidth = size.width;
+						maxHeight = size.height;
+						maxFitSize = size;
+						MLog.getIns().i(TAG, "size log: min abs FitSize:" + maxFitSize.width + "x" + maxFitSize.height);
+					}
 				}
 			}
 		}
@@ -619,7 +621,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					maxHeight = size.height;
 					maxFitSize = size;
 					MLog.getIns().i(TAG, "maxFitSize-isUseLargerImageSize:" + maxFitSize.width + "x" + maxFitSize.height);
-					isUseLargerImageSize = true;
+//					isUseLargerImageSize = true;
 				}
 			}
 		}
@@ -989,6 +991,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			MLog.getIns().i(TAG + "getExifOrientationDegree is not 0 degree, need to handle exif orientation");
 			try {
 				ExifInterface exifOutput = new ExifInterface(pictureFile.getAbsolutePath());
+				// 目前只处理了exif中的方向参数
 				ExifUtil.copyExifOrientation(originExif, exifOutput);
 				data = FileUtil.getByteArrayFromFile(pictureFile);
 			} catch (Exception e) {

@@ -77,6 +77,12 @@ public class ExifUtil {
         return degree;
     }
 
+    /**
+     * 拷贝exif信息中的方向信息
+     *
+     * @param oldExif
+     * @param newExif
+     */
     public static void copyExifOrientation(ExifInterface oldExif, ExifInterface newExif) {
         try {
             String orientation = oldExif.getAttribute(ExifInterface.TAG_ORIENTATION);
