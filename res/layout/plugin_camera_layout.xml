@@ -120,6 +120,18 @@
             android:layout_marginEnd="15dp"
             android:layout_marginBottom="15dp"
             android:background="@drawable/plugin_camera_bt_changefacing_selector" />
+
+        <Button
+            android:id="@+id/plugin_camera_bt_show_info"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:layout_alignParentTop="true"
+            android:layout_alignParentRight="true"
+            android:layout_marginStart="15dp"
+            android:layout_marginTop="118dp"
+            android:layout_marginEnd="15dp"
+            android:layout_marginBottom="15dp"
+            android:background="@drawable/plugin_camera_show_info" />
     </RelativeLayout>
 
     <View

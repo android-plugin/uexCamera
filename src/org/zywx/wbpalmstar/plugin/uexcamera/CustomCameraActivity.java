@@ -5,7 +5,9 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.app.Dialog;
 import android.app.ProgressDialog;
+import android.app.AlertDialog;
 import android.content.ContentValues;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.pm.ActivityInfo;
 import android.content.res.Configuration;
@@ -55,6 +57,7 @@ import org.zywx.wbpalmstar.plugin.uexcamera.utils.ExifUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.FileUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.ImageWatermarkUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.log.MLog;
+import org.zywx.wbpalmstar.plugin.uexcamera.vo.CameraDisplayInfo;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.OpenInternalVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.PhotoSizeVO;
 import org.zywx.wbpalmstar.plugin.uexcamera.vo.WatermarkOptionsVO;
@@ -66,7 +69,6 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.text.DecimalFormat;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
@@ -94,6 +96,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	private Button mBtnFlash3;
 	private Button mBtnFlash4;
 	private ImageView mIvPreShow;
+
+	private Button mBtnShowInfo;
 
 	// Camera相关
 	public Camera mCamera;
@@ -156,6 +160,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		}
 	};
 	private String supportedFocusMode;
+	private AlertDialog mInfoDialog;
+	private CameraDisplayInfo mCameraInfo;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -165,6 +171,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 
 		mExecutorService = Executors.newFixedThreadPool(1);
+		
+		mCameraInfo = new CameraDisplayInfo();
 
 		Window window = getWindow();
 		window.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON);
@@ -214,6 +222,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		mBtnFlash2 = (Button) findViewById(CRes.plugin_camera_bt_flash2);
 		mBtnFlash3 = (Button) findViewById(CRes.plugin_camera_bt_flash3);
 		mBtnFlash4 = (Button) findViewById(CRes.plugin_camera_bt_flash4);
+		mBtnShowInfo = (Button) findViewById(CRes.plugin_camera_bt_show_info);
 
 		flashDrawableIds = new ArrayList<Integer>();
 		flashDrawableIds.add(Integer.valueOf(CRes.plugin_camera_flash_drawale_auto));
@@ -241,6 +250,13 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 							+ " ," + mBtnFlash3.getVisibility() + " ," + mBtnFlash4.getVisibility());
 					mHandler.sendEmptyMessageDelayed(NEED_CLOSE_FLASH_BTS, 4000);
 				}
+			}
+		});
+		mBtnShowInfo.setOnClickListener(new OnClickListener() {
+			@Override
+			public void onClick(View v) {
+				// 弹出一个Dialog，显示一些调试信息
+				showInfoDialog();
 			}
 		});
 		mBtnFlash2.setOnClickListener(new OnClickListener() {
@@ -399,6 +415,50 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		}
 	}
 
+	private void showInfoDialog() {
+		String message = "";
+		// 将mCameraInfo的预览宽高与输出宽高，以及宽高比拼接显示
+		message = "当前预览宽高:\n"
+				+ mCameraInfo.previewSize.width + "x"
+				+ mCameraInfo.previewSize.height
+				+ "，（" + mCameraInfo.getPreviewRatio() + "）"
+				+ "\n当前输出宽高:\n"
+				+ mCameraInfo.pictureSize.width + "x"
+				+ mCameraInfo.pictureSize.height
+				+ "，（" + mCameraInfo.getPictureRatio() + "）";
+		if (mInfoDialog == null) {
+			mInfoDialog = new AlertDialog.Builder(this)
+					.setTitle("相机信息")
+					.setMessage(message)
+					.setPositiveButton("查看全部", null)
+					.setNegativeButton("关闭", new DialogInterface.OnClickListener() {
+						@Override
+						public void onClick(DialogInterface dialog, int which) {
+							dialog.dismiss();
+						}
+					}).create();
+			mInfoDialog.setOnShowListener(new DialogInterface.OnShowListener() {
+				@Override
+				public void onShow(DialogInterface dialog) {
+					mInfoDialog.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener(new OnClickListener() {
+						@Override
+						public void onClick(View v) {
+							List<Camera.Size> previewsizes = mCamera.getParameters().getSupportedPreviewSizes();
+							String previewSizesStr = CameraUtil.getAllSupportedSize(previewsizes);
+							List<Camera.Size> pictureSizes = mCamera.getParameters().getSupportedPictureSizes();
+							String pictureSizesStr = CameraUtil.getAllSupportedSize(pictureSizes);
+							String message = "预览支持:\n" + previewSizesStr + "\n\n输出支持:\n" + pictureSizesStr;
+							mInfoDialog.setMessage(message);
+						}
+					});
+				}
+			});
+		} else {
+			mInfoDialog.setMessage(message);
+		}
+		mInfoDialog.show();
+	}
+
 	private void setViewRotation() {
 		int orientation = (360 - current_orientation) % 360;
 		mBtnCancel.setRotation(orientation);
@@ -555,12 +615,16 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		// 打印surfaceView的宽高
 		MLog.getIns().i(TAG, "size log: surfaceView width:" + mSurfaceView.getWidth() + ",height:" + mSurfaceView.getHeight());
 		// 根据预览区域的最大值，找到适合的相机分辨率
-		Camera.Size previewSize = getFitParametersSize(parameters.getSupportedPreviewSizes(), maxTargetSize.height, maxTargetSize.width, true);
+		Camera.Size previewSize = CameraUtil.getFitParametersSize(parameters.getSupportedPreviewSizes(), maxTargetSize.height, maxTargetSize.width, true);
+		mCameraInfo.previewSize.height = previewSize.height;
+		mCameraInfo.previewSize.width = previewSize.width;
 		MLog.getIns().i(TAG, "size log: previewSize width:" + previewSize.width + ",height:" + previewSize.height);
 		parameters.setPreviewSize(previewSize.width, previewSize.height);
 		// 根据预览分辨率，找到合适的输出图片分辨率
-		Camera.Size pictureSize = getFitParametersSize(parameters.getSupportedPictureSizes(), previewSize.height, previewSize.width, true);
+		Camera.Size pictureSize = CameraUtil.getFitParametersSize(parameters.getSupportedPictureSizes(), maxTargetSize.height, maxTargetSize.width, true);
 		MLog.getIns().i(TAG, "size log: pictureSize width:" + pictureSize.width + ",height:" + pictureSize.height);
+		mCameraInfo.pictureSize.height = pictureSize.height;
+		mCameraInfo.pictureSize.width = pictureSize.width;
 		parameters.setPictureSize(pictureSize.width, pictureSize.height);
 		// 根据预览分辨率，调整surfaceView的高度，防止比例失调
 		int newSurfaceViewHeight = (int) (previewSize.width * mSurfaceView.getWidth() / previewSize.height);
@@ -572,71 +636,6 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		}
 	}
 
-	private Camera.Size getFitParametersSize(List<Camera.Size> sizes) {
-		CameraUtil.Size targetSize = CameraUtil.getTargetSize(mSurfaceView);
-		// 因为是相机会旋转90度，因此这里会交换宽高
-		return getFitParametersSize(sizes, targetSize.height, targetSize.width, true);
-	}
-
-	private Camera.Size getFitParametersSize(List<Camera.Size> sizes, int targetWidth, int targetHeight, boolean isConsiderRatio) {
-		double dmFormat = getFormat(targetWidth, targetHeight);
-		int maxWidth = 0, maxHeight = 0;
-		Camera.Size maxFitSize = null;
-		// 不再优先比例，而是找最大值
-		if (isConsiderRatio) {
-			// 优先选取比例相近的，从比例差在0.1以内的尺寸中，挑选一个最大的尺寸，尽量保证照片清晰
-			for (Camera.Size size : sizes) {
-				double abs = Math.abs(dmFormat - getFormat(size.width, size.height));
-				if (abs <= 0.1d) {
-					if (size.width > maxWidth && size.height > maxHeight) {
-						maxWidth = size.width;
-						maxHeight = size.height;
-						maxFitSize = size;
-						MLog.getIns().i(TAG, "size log: abs<0.1 FitSize:" + maxFitSize.width + "x" + maxFitSize.height);
-					}
-				}
-			}
-			// 如果没有比例相近的（0.1以内的），选取abs最小的，并且宽高都大于目标宽高的
-			if (maxFitSize == null) {
-				double minAbs = Double.MAX_VALUE;
-				for (Camera.Size size : sizes) {
-					// 打印所有的尺寸宽高
-					MLog.getIns().i(TAG, "size log: supported size width:" + size.width + ",height:" + size.height);
-					double abs = Math.abs(dmFormat - getFormat(size.width, size.height));
-					if (abs < minAbs && size.width > targetWidth && size.height > targetHeight) {
-						minAbs = abs;
-						maxWidth = size.width;
-						maxHeight = size.height;
-						maxFitSize = size;
-						MLog.getIns().i(TAG, "size log: min abs FitSize:" + maxFitSize.width + "x" + maxFitSize.height);
-					}
-				}
-			}
-		}
-		// 如果仍然没有比例相近的，或者分辨率太低，则取最大的宽高
-		if (maxFitSize == null || maxFitSize.width < targetWidth || maxFitSize.height < targetHeight) {
-			for (Camera.Size size : sizes) {
-				if (size.width > maxWidth && size.height > maxHeight) {
-					maxWidth = size.width;
-					maxHeight = size.height;
-					maxFitSize = size;
-					MLog.getIns().i(TAG, "maxFitSize-isUseLargerImageSize:" + maxFitSize.width + "x" + maxFitSize.height);
-//					isUseLargerImageSize = true;
-				}
-			}
-		}
-		if (maxFitSize == null) {
-			maxFitSize = sizes.get(0);
-		}
-		return maxFitSize;
-	}
-
-
-	private double getFormat(int formatX, int formatY) {
-		DecimalFormat format = new DecimalFormat("#.00");
-		double result = Double.parseDouble(format.format((double) formatX / (double) formatY));
-		return result;
-	}
 
 	private void setDisplayOrientation(Camera camera, int angle) {
 		camera.setDisplayOrientation(angle);
@@ -756,7 +755,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		// 如果使用了大尺寸的图片，即没有找到与手机屏幕比例相近的图片，那么需要对图片进行裁剪
 		if (isUseLargerImageSize) {
 			CameraUtil.Size targetSize = CameraUtil.getTargetSize(mSurfaceView);
-			double dmFormat = getFormat(targetSize.height, targetSize.width);
+			double dmFormat = CameraUtil.getFormat(targetSize.height, targetSize.width);
 			Bitmap originBitmap = BitmapFactory.decodeByteArray(data, 0, data.length);
 			Bitmap cropBitmap = BitmapUtil.cropBitmap(originBitmap, dmFormat);
 			int bytes = cropBitmap.getByteCount();
@@ -804,7 +803,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			bm = BitmapFactory.decodeByteArray(data, 0, data.length, options);
 			if (this.isUseLargerImageSize) {
 				CameraUtil.Size targetSize = CameraUtil.getTargetSize(mSurfaceView);
-				double dmFormat = getFormat(targetSize.height, targetSize.width);
+				double dmFormat = CameraUtil.getFormat(targetSize.height, targetSize.width);
 				Bitmap newBitmap = BitmapUtil.cropBitmap(bm, dmFormat);
 				bm.recycle();
 				bm = newBitmap;
@@ -860,7 +859,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				}
 				if (this.isUseLargerImageSize) {
 					CameraUtil.Size targetSize = CameraUtil.getTargetSize(mSurfaceView);
-					double dmFormat = getFormat(targetSize.height, targetSize.width);
+					double dmFormat = CameraUtil.getFormat(targetSize.height, targetSize.width);
 					Bitmap newBitmap = BitmapUtil.cropBitmap(bm, dmFormat);
 					bm.recycle();
 					bm = newBitmap;
@@ -872,7 +871,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				bm = BitmapUtil.compressBmpFileToTargetSize(data, targetSizeLong);
 				if (this.isUseLargerImageSize) {
 					CameraUtil.Size targetSize = CameraUtil.getTargetSize(mSurfaceView);
-					double dmFormat = getFormat(targetSize.height, targetSize.width);
+					double dmFormat = CameraUtil.getFormat(targetSize.height, targetSize.width);
 					Bitmap newBitmap = BitmapUtil.cropBitmap(bm, dmFormat);
 					bm.recycle();
 					bm = newBitmap;
