@@ -18,6 +18,7 @@ import android.hardware.Camera.CameraInfo;
 import android.hardware.Camera.Parameters;
 import android.hardware.Camera.PictureCallback;
 import android.media.ExifInterface;
+import android.media.MediaScannerConnection;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Build;
@@ -46,7 +47,6 @@ import android.widget.Button;
 import android.widget.FrameLayout;
 import android.widget.ImageView;
 import android.widget.ImageView.ScaleType;
-import android.widget.RelativeLayout;
 import android.widget.Toast;
 
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
@@ -1005,8 +1005,31 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.R) {
 				updateAlbum(data, pictureFile.getName());
 			} else {
-				// TODO
-				MLog.getIns().e(TAG + "系统版本低于R，暂不处理写入相册逻辑");
+				MLog.getIns().e(TAG + "系统版本低于R，采用MediaScanner存入相册");
+				String relativeDirPath = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_PICTURES) + File.separator + "AppCanDCIM";
+				File parentDirFile = new File(relativeDirPath);
+				if (!parentDirFile.exists()) {
+					parentDirFile.mkdirs();
+				}
+				// 将data写入sdcard的图片目录中，需要先获取sdcard路径并拼接
+				File albumOutputFile = new File(relativeDirPath, pictureFile.getName());
+				FileOutputStream fos = null;
+				try {
+					fos = new FileOutputStream(albumOutputFile);
+					fos.write(data);
+					fos.close();
+					MediaScannerConnection.scanFile(this, new String[]{albumOutputFile.getAbsolutePath()}, null, null);
+				} catch (Exception e) {
+					MLog.getIns().e(TAG + "copyImageToAlbum 照片添加失败", e);
+				} finally {
+					if (fos != null) {
+						try {
+							fos.close();
+						} catch (IOException e) {
+							e.printStackTrace();
+						}
+					}
+				}
 			}
 		} else {
 			// 关闭了公共存储，故不需要更新到相册
@@ -1027,6 +1050,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	 */
 	@RequiresApi(api = Build.VERSION_CODES.R)
 	private void updateAlbum(byte[] data, String fileName){
+
 //		Uri fileUri = BUtility.getUriForFileWithFileProvider(this, file.getAbsolutePath());
 //		String fileName = "test.jpg";
 		long imageTokenTime = System.currentTimeMillis();
