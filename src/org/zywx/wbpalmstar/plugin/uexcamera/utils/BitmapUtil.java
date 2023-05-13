@@ -122,10 +122,18 @@ public class BitmapUtil {
 	 * @param targetSize
 	 */
 	public static Bitmap compressBmpFileToTargetSize(byte[] bitmapData, long targetSize) {
-		MLog.getIns().i(TAG, String.format(Locale.US, "compressBmpFileToTargetSize start file.length():%d", bitmapData.length));
+		MLog.getIns().i(TAG, String.format(Locale.US, "compress log: compressBmpFileToTargetSize start bitmapData.length:%d", bitmapData.length));
+		MLog.getIns().i(TAG, String.format(Locale.US, "compress log: compressBmpFileToTargetSize targetSize:%d", targetSize));
 		Bitmap finalResult = null;
-		if (bitmapData.length > targetSize) {
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		// 先计算经过compress之后的图片压缩大小，然后比大小。
+		// 因为有的时候，压缩之后反而比原始byte数据还要大，导致这里判断认为挺小的，但是最后一步输出文件的时候突然变大了。
+		ByteArrayOutputStream baos = new ByteArrayOutputStream();
+		Bitmap tempBitmap = BitmapFactory.decodeByteArray(bitmapData, 0, bitmapData.length);
+		tempBitmap.compress(Bitmap.CompressFormat.JPEG, 100, baos);
+		long originSize = baos.toByteArray().length;
+		MLog.getIns().i(TAG, "compress log: origin: " + originSize);
+		baos.reset();
+		if (originSize > targetSize) {
 			// 每次宽高各缩小一半
 			int ratio = 2;
 			// 获取图片原始宽高
@@ -138,15 +146,19 @@ public class BitmapUtil {
 			int quality = 100;
 			Bitmap result = generateScaledBmp(sourceBitmap, targetWidth, targetHeight, baos, quality);
 
+			long currentSize = baos.toByteArray().length;
 			// 计数保护，防止次数太多太耗时。
 			int count = 0;
-			while (baos.size() > targetSize && count <= 10) {
+			MLog.getIns().i(TAG, "compressBmpFileToTargetSize currentSize:" + currentSize);
+			while (currentSize > targetSize && count <= 10) {
 				targetWidth /= ratio;
 				targetHeight /= ratio;
 				count++;
 				// 重置，不然会累加
 				baos.reset();
 				result = generateScaledBmp(result, targetWidth, targetHeight, baos, quality);
+				currentSize = baos.toByteArray().length;
+				MLog.getIns().i(TAG, "compressBmpFileToTargetSize currentSize:" + currentSize);
 			}
 			finalResult = result;
 			MLog.getIns().i(TAG, String.format(Locale.US, "compressBmpFileToTargetSize end baos.size():%d", baos.size()));

@@ -897,6 +897,16 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					try {
 						bos = new BufferedOutputStream(new FileOutputStream(pictureFile));
 						result.compress(Bitmap.CompressFormat.JPEG, quality, bos);
+
+
+
+						ByteArrayOutputStream baos = new ByteArrayOutputStream();
+						result.compress(Bitmap.CompressFormat.JPEG, quality, baos);
+						long currentSize = baos.toByteArray().length;
+						MLog.getIns().i(TAG, "compressBmpFileToTargetSize baos.toByteArray().length " + currentSize);
+
+
+
 						bos.flush();
 					} catch (IOException e) {
 						MLog.getIns().e(TAG + "AppCan Camera Watermark", e);
@@ -968,9 +978,11 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				mPictureBytesData = null;
 				FileOutputStream fos = null;
 				try {
+					MLog.getIns().i(TAG, "compress log: no compress: bitmap byte data length=" + data.length);
 					fos = new FileOutputStream(pictureFile);
 					fos.write(data);
 					fos.close();
+					MLog.getIns().i(TAG, "compress log: no compress:  file length=" + pictureFile.length());
 				} catch (Exception e) {
 					MLog.getIns().e(TAG + "saveImage 照片存储失败", e);
 				} finally {
