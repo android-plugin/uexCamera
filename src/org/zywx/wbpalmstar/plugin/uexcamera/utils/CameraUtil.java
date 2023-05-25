@@ -3,6 +3,7 @@ package org.zywx.wbpalmstar.plugin.uexcamera.utils;
 import android.app.Activity;
 import android.hardware.Camera;
 import android.util.DisplayMetrics;
+import android.view.MotionEvent;
 import android.view.SurfaceView;
 import android.view.View;
 
@@ -142,5 +143,27 @@ public class CameraUtil {
             sb.append(", ");
         }
         return sb.toString();
+    }
+
+    public static void handleZoom(Camera camera, boolean isZoomIn) {
+        Camera.Parameters parameters = camera.getParameters();
+        if (parameters.isZoomSupported()) { // 首先还是要判断是否支持
+            int maxZoom = parameters.getMaxZoom();
+            int zoom = parameters.getZoom();
+            if (isZoomIn && zoom < maxZoom) {
+                zoom++;
+            } else if (zoom > 0) {
+                zoom--;
+            }
+            parameters.setZoom(zoom); // 通过这个方法设置放大缩小
+            camera.setParameters(parameters);
+        } else {
+            MLog.getIns().w(TAG + " zoom is not supported!!!");
+        }
+    }
+    public static float getFingerSpacing(MotionEvent event) {
+        float x = event.getX(0) - event.getX(1);
+        float y = event.getY(0) - event.getY(1);
+        return (float) Math.sqrt(x * x + y * y);
     }
 }

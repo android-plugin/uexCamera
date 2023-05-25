@@ -1132,6 +1132,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		}, 1 * 1000);
 	}
 
+	private float mOldDistance = 0;
+
 	/**
 	 * 点击显示焦点区域
 	 */
@@ -1140,22 +1142,43 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		@SuppressLint("ClickableViewAccessibility")
 		@Override
 		public boolean onTouch(View v, MotionEvent event) {
-			if (event.getAction() == MotionEvent.ACTION_DOWN) {
-				int width = view_focus.getWidth();
-				int height = view_focus.getHeight();
-				view_focus.setBackgroundResource(CRes.plugin_camera_view_focusing_bg);
-				if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-					view_focus.setX(event.getX() - (width / 2));
-					view_focus.setY(event.getY() - (height / 2));
+			if (event.getPointerCount() == 1) {
+				if (event.getAction() == MotionEvent.ACTION_DOWN) {
+					int width = view_focus.getWidth();
+					int height = view_focus.getHeight();
+					view_focus.setBackgroundResource(CRes.plugin_camera_view_focusing_bg);
+					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
+						view_focus.setX(event.getX() - (width / 2));
+						view_focus.setY(event.getY() - (height / 2));
+					}
+					view_focus.setVisibility(View.VISIBLE);
+				} else if (event.getAction() == MotionEvent.ACTION_UP) {
+					mode = MODE.FOCUSING;
+					focusOnTouch(event);
 				}
-				view_focus.setVisibility(View.VISIBLE);
-			} else if (event.getAction() == MotionEvent.ACTION_UP) {
-				mode = MODE.FOCUSING;
-				focusOnTouch(event);
+				return true;
+			} else {
+				switch (event.getAction() & MotionEvent.ACTION_MASK) {
+					case MotionEvent.ACTION_POINTER_DOWN:
+						mOldDistance = CameraUtil.getFingerSpacing(event);
+						break;
+					case MotionEvent.ACTION_MOVE:
+						float newDistance = CameraUtil.getFingerSpacing(event);
+						if (newDistance > mOldDistance) {
+							CameraUtil.handleZoom(mCamera, true);
+						} else if (newDistance < mOldDistance) {
+							CameraUtil.handleZoom(mCamera, false);
+						}
+						mOldDistance = newDistance;
+						break;
+					default:
+						break;
+				}
+				return CustomCameraActivity.super.onTouchEvent(event);
 			}
-			return true;
 		}
 	};
+
 
 	/**
 	 * 设置焦点和测光区域
