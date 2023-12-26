@@ -999,8 +999,8 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                 if (mTempPath != null && !mTempPath.exists()){
                     BDebug.e(TAG, "openInternal Camera mTempPath is not exist: " + mTempPath.getAbsolutePath());
                 }
-
                 final String finalStaticPath = finalPath;
+                // 因为其中包含了检查图片的逻辑，比较耗时，因此用线程池执行。
                 mExecutorService.submit(new Runnable() {
                     @Override
                     public void run() {
@@ -1009,38 +1009,28 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                             errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Get black picture");
                             return;
                         }
+                        // 兼容4.6、4.7引擎，target30，转换路径为ContentProvider路径，防止WebView无法展示图片
+                        final String uiFinalStaticPath;
+                        Uri finalUri = BUtility.getUriForFileWithFileProvider(mContext, finalStaticPath);
+                        if (finalUri != null) {
+                            uiFinalStaticPath = finalUri.toString();
+                        } else {
+                            uiFinalStaticPath = finalStaticPath;
+                        }
+                        // 最终的回调需要回到主线程
                         Handler uiHandler = new Handler(Looper.getMainLooper());
                         uiHandler.post(new Runnable() {
                             @Override
                             public void run() {
                                 if (TextUtils.isEmpty(openInternalFunc)) {
-                                    jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, finalStaticPath);
+                                    jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, uiFinalStaticPath);
                                 } else {
-                                    callbackToJs(Integer.parseInt(openInternalFunc), false, finalStaticPath);
+                                    callbackToJs(Integer.parseInt(openInternalFunc), false, uiFinalStaticPath);
                                 }
                             }
                         });
                     }
                 });
-
-//                if (!mIsCompress && 0 == degree) {
-//                    if (TextUtils.isEmpty(openInternalFunc)) {
-//                        jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
-//                    } else {
-//                        callbackToJs(Integer.parseInt(openInternalFunc), false, finalPath);
-//                    }
-//                } else {
-//                    String tPath = makePicture(new File(finalPath), degree);
-//                    if (null == tPath) {
-//                        errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
-//                    } else {
-//                        if (TextUtils.isEmpty(openInternalFunc)) {
-//                            jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, tPath);
-//                        } else {
-//                            callbackToJs(Integer.parseInt(openInternalFunc), false, tPath);
-//                        }
-//                    }
-//                }
             } else if (requestCode == Constant.REQUEST_CODE_INTERNAL_VIEW_CAMERA) {
                 MLog.getIns().i("requestCode = " + requestCode);
                 String photoPath = data.getStringExtra("photoPath");
