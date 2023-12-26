@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.media.ExifInterface;
 import android.net.Uri;
@@ -797,6 +798,10 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
+        if (mExecutorService == null) {
+            mExecutorService = Executors.newFixedThreadPool(1);
+        }
+
         String finalPath = "";// 最终图片存储路径
         ExifInterface exif = null;// 主要描述多媒体文件比如JPG格式图片的一些附加信息
         int degree = 0;// 方向
@@ -925,6 +930,11 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                     // 如果不压缩，且方向==0
                     if (!mIsCompress && 0 == degree) {
 
+                        if(checkPic(finalPath)) {
+                            errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Get black picture");
+                            return;
+                        }
+
                         // 直接回调最终地址
                         if (TextUtils.isEmpty(openFunc)) {
                             jsCallback(FUNC_OPEN_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
@@ -943,6 +953,10 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                             errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
 
                         } else {
+                            if(checkPic(photoPath)) {
+                                errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Get black picture");
+                                return;
+                            }
                             if (TextUtils.isEmpty(openFunc)) {
                                 jsCallback(FUNC_OPEN_CALLBACK, 0, EUExCallback.F_C_TEXT, photoPath);
                             } else {
@@ -986,13 +1000,28 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                     BDebug.e(TAG, "openInternal Camera mTempPath is not exist: " + mTempPath.getAbsolutePath());
                 }
 
-                FileUtil.checkFilePath(finalPath);
-
-                if (TextUtils.isEmpty(openInternalFunc)) {
-                    jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
-                } else {
-                    callbackToJs(Integer.parseInt(openInternalFunc), false, finalPath);
-                }
+                final String finalStaticPath = finalPath;
+                mExecutorService.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        FileUtil.checkFilePath(finalStaticPath);
+                        if(checkPic(finalStaticPath)) {
+                            errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Get black picture");
+                            return;
+                        }
+                        Handler uiHandler = new Handler(Looper.getMainLooper());
+                        uiHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (TextUtils.isEmpty(openInternalFunc)) {
+                                    jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, finalStaticPath);
+                                } else {
+                                    callbackToJs(Integer.parseInt(openInternalFunc), false, finalStaticPath);
+                                }
+                            }
+                        });
+                    }
+                });
 
 //                if (!mIsCompress && 0 == degree) {
 //                    if (TextUtils.isEmpty(openInternalFunc)) {
@@ -1245,6 +1274,51 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
             removeViewFromCurrentWindow(view);
             view = null;
         }
+    }
+
+    /**
+     * 判断图片文件是否都是黑图
+     * @param filepath
+     * @return
+     */
+    private boolean checkPic(String filepath) {
+        Bitmap tmpPicture = null;
+        File picFile = new File(filepath);
+        try {
+
+            // 生成临时位图
+            tmpPicture = BitmapFactory.decodeStream(new FileInputStream(picFile.getAbsolutePath()));
+
+            if (tmpPicture == null) {
+                MLog.getIns().i("【checkPic】 位图失败，tmpPicture == null return");
+                return false;
+            }
+
+            int height = tmpPicture.getHeight();
+            int width = tmpPicture.getWidth();
+            int count = 0;
+            int pixel = 0;
+
+            for (int i=0; i<width; i++) {
+                for(int j=0; j<height; j++) {
+                    pixel = tmpPicture.getPixel(i,j);
+                    int r = Color.red(pixel);
+                    int b = Color.blue(pixel);
+                    int g = Color.green(pixel);
+                    if (r<50 && b < 50 && g < 50) {
+                        count++;
+                    }
+                }
+            }
+
+            float val = (float)count / (float)(height*width);
+            if (val > 0.5f) {
+                return true;
+            }
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        return false;
     }
 
     private void callbackCameraPermissionDenied() {
