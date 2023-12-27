@@ -315,15 +315,9 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
         // 如果SD卡可以工作
         if (BUtility.sdCardIsWork()) {
 
-            // 如果不压缩
-            if (!mIsCompress) {
-                String outputFilePath = generateOutputPhotoFilePath();
-                mTempPath = new File(outputFilePath);
-            } else {
-
-                // 使用临时文件名存储文件
-                mTempPath = new File(BUtility.getSdCardRootPath() + "demo.jpg");
-            }
+            String outputFilePath = generateOutputPhotoFilePath();
+            mTempPath = new File(outputFilePath);
+            BDebug.i(TAG, "uexCamera open origin Photo mTempPath: " + mTempPath.getAbsolutePath());
             // 如果不存在，创建
             if (!mTempPath.exists()) {
                 try {
@@ -934,6 +928,12 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                             errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Get black picture");
                             return;
                         }
+                        // 转换图片路径为content provider形式
+                        Uri finalPhotoContentUri = BUtility.getUriForFileWithFileProvider(mContext, finalPath);
+                        if (null != finalPhotoContentUri) {
+                            finalPath = finalPhotoContentUri.toString();
+                        }
+                        BDebug.i(TAG, "uexCamera open final Photo ContentUri: " + finalPath);
 
                         // 直接回调最终地址
                         if (TextUtils.isEmpty(openFunc)) {
@@ -957,6 +957,12 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                                 errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Get black picture");
                                 return;
                             }
+                            BDebug.i(TAG, "uexCamera open final Photo mTempPath: " + photoPath);
+                            Uri finalPhotoContentUri = BUtility.getUriForFileWithFileProvider(mContext, photoPath);
+                            if (null != finalPhotoContentUri) {
+                                photoPath = finalPhotoContentUri.toString();
+                            }
+                            BDebug.i(TAG, "uexCamera open final Photo ContentUri: " + photoPath);
                             if (TextUtils.isEmpty(openFunc)) {
                                 jsCallback(FUNC_OPEN_CALLBACK, 0, EUExCallback.F_C_TEXT, photoPath);
                             } else {
@@ -1157,28 +1163,25 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
             if (tempBitmap == null) {
                 MLog.getIns().i("【makePictrue】	生成临时位图失败，tmpPicture == null return");
-                return null;
-            }
-
-            // 如果方向大于0
-            if (degree > 0) {
-
-                // 旋转bitmap
-                tempBitmap = BitmapUtil.rotate(tempBitmap, degree);
+                newPath = null;
+            } else {
+                // 如果方向大于0
+                if (degree > 0) {
+                    // 旋转bitmap
+                    tempBitmap = BitmapUtil.rotate(tempBitmap, degree);
+                }
 
                 if (tempBitmap == null) {
                     MLog.getIns().i("【makePictrue】	旋转临时位图失败，tmpPicture == null return");
-                    return null;
+                    newPath = null;
+                } else {
+                    // 压缩和旋转完成，写入文件
+                    BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(newFile));
+                    tempBitmap.compress(Bitmap.CompressFormat.JPEG, mQuality, bos);
+                    bos.flush();
+                    bos.close();
                 }
             }
-
-            // 写入文件
-            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(newFile));
-            tempBitmap.compress(Bitmap.CompressFormat.JPEG, mQuality, bos);
-            bos.flush();
-            bos.close();
-
-            return newPath;
 
         } catch (OutOfMemoryError e) {
 
@@ -1223,7 +1226,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
             tempPath.delete();// 删除临时图片
             System.gc();
         }
-        return null;
+        return newPath;
     }
 
     /**
