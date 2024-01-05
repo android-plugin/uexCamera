@@ -386,6 +386,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				+ mBtnFlash4.getVisibility());
 	}
 
+
 	protected void onOrientationChanged(int orientation) {
 		if (orientation == OrientationEventListener.ORIENTATION_UNKNOWN) {
 			return;
@@ -629,6 +630,10 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		// 根据预览分辨率，调整surfaceView的高度，防止比例失调
 		int newSurfaceViewHeight = (int) (previewSize.width * mSurfaceView.getWidth() / previewSize.height);
 		mSurfaceView.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, newSurfaceViewHeight));
+
+		//设置闪光灯默认为自动
+		parameters.setFlashMode(Parameters.FLASH_MODE_AUTO);
+
 		try {
 			mCamera.setParameters(parameters);
 		} catch (Exception e) {
@@ -676,6 +681,20 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			mOnKeyDown = true;
 			return true;
 		}
+		if (keyCode == event.KEYCODE_VOLUME_DOWN ||
+			keyCode == event.KEYCODE_VOLUME_UP ) {
+            if (!Parameters.FOCUS_MODE_CONTINUOUS_PICTURE.equals(supportedFocusMode) && (mode == MODE.FOCUSFAIL || mode == MODE.FOCUSING || mCamera == null)) {
+                   Toast.makeText(CustomCameraActivity.this, "相机正在准备中，请稍候", Toast.LENGTH_SHORT).show();
+                   return true;
+            }
+            if (mPreviewing) {
+                   mPreviewing = false;
+                   mCamera.takePicture(null, null, pictureCallback);
+            } else {
+                   Toast.makeText(CustomCameraActivity.this, "摄像机正忙", Toast.LENGTH_SHORT).show();
+            }
+			return true;
+        }
 		return super.onKeyDown(keyCode, event);
 	}
 

@@ -1,8 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="4.3.24" build="2023052601">
-        <info>24:增加手势缩放自定义相机画面的功能</info>
+        uexName="uexCamera" version="4.6.29.1" build="2023122701">
+        <info>29.1:适配4.6、4.7引擎，target30，包括系统相机和自定义相机</info>
+        <build>28:增加检查黑色图片逻辑，如果是全黑色图片，不返回图片路径</build>
+        <build>27:增加使用增加音量键拍照功能</build>
+        <build>26:增加使用减小音量键拍照功能</build>
+        <build>25:修复默认开启自动闪光功能</build>
+        <build>24:增加手势缩放自定义相机画面的功能</build>
         <build>23.2:修复自定义相机分辨率比例选取逻辑异常导致的图片异常问题</build>
         <build>22:调整图片宽高选取逻辑，动态调整取景框</build>
         <build>21.1:适配Honor机型相机启动后因为首次对焦失败导致无法拍照的问题</build>

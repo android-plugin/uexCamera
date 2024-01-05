@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.database.Cursor;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
+import android.graphics.Color;
 import android.graphics.Point;
 import android.media.ExifInterface;
 import android.net.Uri;
@@ -314,15 +315,9 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
         // 如果SD卡可以工作
         if (BUtility.sdCardIsWork()) {
 
-            // 如果不压缩
-            if (!mIsCompress) {
-                String outputFilePath = generateOutputPhotoFilePath();
-                mTempPath = new File(outputFilePath);
-            } else {
-
-                // 使用临时文件名存储文件
-                mTempPath = new File(BUtility.getSdCardRootPath() + "demo.jpg");
-            }
+            String outputFilePath = generateOutputPhotoFilePath();
+            mTempPath = new File(outputFilePath);
+            BDebug.i(TAG, "uexCamera open origin Photo mTempPath: " + mTempPath.getAbsolutePath());
             // 如果不存在，创建
             if (!mTempPath.exists()) {
                 try {
@@ -797,6 +792,10 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
     @Override
     public void onActivityResult(int requestCode, int resultCode, Intent data) {
 
+        if (mExecutorService == null) {
+            mExecutorService = Executors.newFixedThreadPool(1);
+        }
+
         String finalPath = "";// 最终图片存储路径
         ExifInterface exif = null;// 主要描述多媒体文件比如JPG格式图片的一些附加信息
         int degree = 0;// 方向
@@ -925,6 +924,17 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                     // 如果不压缩，且方向==0
                     if (!mIsCompress && 0 == degree) {
 
+                        if(checkPic(finalPath)) {
+                            errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Get black picture");
+                            return;
+                        }
+                        // 转换图片路径为content provider形式
+                        Uri finalPhotoContentUri = BUtility.getUriForFileWithFileProvider(mContext, finalPath);
+                        if (null != finalPhotoContentUri) {
+                            finalPath = finalPhotoContentUri.toString();
+                        }
+                        BDebug.i(TAG, "uexCamera open final Photo ContentUri: " + finalPath);
+
                         // 直接回调最终地址
                         if (TextUtils.isEmpty(openFunc)) {
                             jsCallback(FUNC_OPEN_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
@@ -943,6 +953,16 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                             errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
 
                         } else {
+                            if(checkPic(photoPath)) {
+                                errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Get black picture");
+                                return;
+                            }
+                            BDebug.i(TAG, "uexCamera open final Photo mTempPath: " + photoPath);
+                            Uri finalPhotoContentUri = BUtility.getUriForFileWithFileProvider(mContext, photoPath);
+                            if (null != finalPhotoContentUri) {
+                                photoPath = finalPhotoContentUri.toString();
+                            }
+                            BDebug.i(TAG, "uexCamera open final Photo ContentUri: " + photoPath);
                             if (TextUtils.isEmpty(openFunc)) {
                                 jsCallback(FUNC_OPEN_CALLBACK, 0, EUExCallback.F_C_TEXT, photoPath);
                             } else {
@@ -985,33 +1005,38 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                 if (mTempPath != null && !mTempPath.exists()){
                     BDebug.e(TAG, "openInternal Camera mTempPath is not exist: " + mTempPath.getAbsolutePath());
                 }
-
-                FileUtil.checkFilePath(finalPath);
-
-                if (TextUtils.isEmpty(openInternalFunc)) {
-                    jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
-                } else {
-                    callbackToJs(Integer.parseInt(openInternalFunc), false, finalPath);
-                }
-
-//                if (!mIsCompress && 0 == degree) {
-//                    if (TextUtils.isEmpty(openInternalFunc)) {
-//                        jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, finalPath);
-//                    } else {
-//                        callbackToJs(Integer.parseInt(openInternalFunc), false, finalPath);
-//                    }
-//                } else {
-//                    String tPath = makePicture(new File(finalPath), degree);
-//                    if (null == tPath) {
-//                        errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Storage error or no permission");
-//                    } else {
-//                        if (TextUtils.isEmpty(openInternalFunc)) {
-//                            jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, tPath);
-//                        } else {
-//                            callbackToJs(Integer.parseInt(openInternalFunc), false, tPath);
-//                        }
-//                    }
-//                }
+                final String finalStaticPath = finalPath;
+                // 因为其中包含了检查图片的逻辑，比较耗时，因此用线程池执行。
+                mExecutorService.submit(new Runnable() {
+                    @Override
+                    public void run() {
+                        FileUtil.checkFilePath(finalStaticPath);
+                        if(checkPic(finalStaticPath)) {
+                            errorCallback(0, EUExCallback.F_E_UEXCAMERA_OPEN, "Get black picture");
+                            return;
+                        }
+                        // 兼容4.6、4.7引擎，target30，转换路径为ContentProvider路径，防止WebView无法展示图片
+                        final String uiFinalStaticPath;
+                        Uri finalUri = BUtility.getUriForFileWithFileProvider(mContext, finalStaticPath);
+                        if (finalUri != null) {
+                            uiFinalStaticPath = finalUri.toString();
+                        } else {
+                            uiFinalStaticPath = finalStaticPath;
+                        }
+                        // 最终的回调需要回到主线程
+                        Handler uiHandler = new Handler(Looper.getMainLooper());
+                        uiHandler.post(new Runnable() {
+                            @Override
+                            public void run() {
+                                if (TextUtils.isEmpty(openInternalFunc)) {
+                                    jsCallback(FUNC_OPEN_INTERNAL_CALLBACK, 0, EUExCallback.F_C_TEXT, uiFinalStaticPath);
+                                } else {
+                                    callbackToJs(Integer.parseInt(openInternalFunc), false, uiFinalStaticPath);
+                                }
+                            }
+                        });
+                    }
+                });
             } else if (requestCode == Constant.REQUEST_CODE_INTERNAL_VIEW_CAMERA) {
                 MLog.getIns().i("requestCode = " + requestCode);
                 String photoPath = data.getStringExtra("photoPath");
@@ -1138,28 +1163,25 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
 
             if (tempBitmap == null) {
                 MLog.getIns().i("【makePictrue】	生成临时位图失败，tmpPicture == null return");
-                return null;
-            }
-
-            // 如果方向大于0
-            if (degree > 0) {
-
-                // 旋转bitmap
-                tempBitmap = BitmapUtil.rotate(tempBitmap, degree);
+                newPath = null;
+            } else {
+                // 如果方向大于0
+                if (degree > 0) {
+                    // 旋转bitmap
+                    tempBitmap = BitmapUtil.rotate(tempBitmap, degree);
+                }
 
                 if (tempBitmap == null) {
                     MLog.getIns().i("【makePictrue】	旋转临时位图失败，tmpPicture == null return");
-                    return null;
+                    newPath = null;
+                } else {
+                    // 压缩和旋转完成，写入文件
+                    BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(newFile));
+                    tempBitmap.compress(Bitmap.CompressFormat.JPEG, mQuality, bos);
+                    bos.flush();
+                    bos.close();
                 }
             }
-
-            // 写入文件
-            BufferedOutputStream bos = new BufferedOutputStream(new FileOutputStream(newFile));
-            tempBitmap.compress(Bitmap.CompressFormat.JPEG, mQuality, bos);
-            bos.flush();
-            bos.close();
-
-            return newPath;
 
         } catch (OutOfMemoryError e) {
 
@@ -1204,7 +1226,7 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
             tempPath.delete();// 删除临时图片
             System.gc();
         }
-        return null;
+        return newPath;
     }
 
     /**
@@ -1245,6 +1267,51 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
             removeViewFromCurrentWindow(view);
             view = null;
         }
+    }
+
+    /**
+     * 判断图片文件是否都是黑图
+     * @param filepath
+     * @return
+     */
+    private boolean checkPic(String filepath) {
+        Bitmap tmpPicture = null;
+        File picFile = new File(filepath);
+        try {
+
+            // 生成临时位图
+            tmpPicture = BitmapFactory.decodeStream(new FileInputStream(picFile.getAbsolutePath()));
+
+            if (tmpPicture == null) {
+                MLog.getIns().i("【checkPic】 位图失败，tmpPicture == null return");
+                return false;
+            }
+
+            int height = tmpPicture.getHeight();
+            int width = tmpPicture.getWidth();
+            int count = 0;
+            int pixel = 0;
+
+            for (int i=0; i<width; i++) {
+                for(int j=0; j<height; j++) {
+                    pixel = tmpPicture.getPixel(i,j);
+                    int r = Color.red(pixel);
+                    int b = Color.blue(pixel);
+                    int g = Color.green(pixel);
+                    if (r<50 && b < 50 && g < 50) {
+                        count++;
+                    }
+                }
+            }
+
+            float val = (float)count / (float)(height*width);
+            if (val > 0.5f) {
+                return true;
+            }
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException(e);
+        }
+        return false;
     }
 
     private void callbackCameraPermissionDenied() {
