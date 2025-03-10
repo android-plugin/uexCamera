@@ -1,11 +1,10 @@
 package org.zywx.wbpalmstar.plugin.uexcamera;
 
-import android.R.integer;
 import android.annotation.SuppressLint;
 import android.app.Activity;
+import android.app.AlertDialog;
 import android.app.Dialog;
 import android.app.ProgressDialog;
-import android.app.AlertDialog;
 import android.content.ContentValues;
 import android.content.DialogInterface;
 import android.content.Intent;
@@ -22,7 +21,6 @@ import android.hardware.Camera.PictureCallback;
 import android.media.ExifInterface;
 import android.media.MediaScannerConnection;
 import android.net.Uri;
-import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
@@ -78,14 +76,14 @@ import java.util.concurrent.Executors;
 
 /**
  * 自定义相机Activity
- * 
+ *
  * @author waka
  *
  */
 public class CustomCameraActivity extends Activity implements Callback, AutoFocusCallback {
 
 	private static final String TAG = "CustomCameraActivity";
-	
+
 	// View
 	public SurfaceView mSurfaceView;
 	private View mBottomBar;
@@ -119,7 +117,6 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	private boolean isHasFrontCamera = false;// 是否有前置摄像头
 	private boolean isHasBackCamera = false;
 	private boolean ismCameraCanFlash = false;
-	private HandlePicAsyncTask mHandleTask;
 	private View view_focus;
 	private MODE mode = MODE.NONE;// 默认模式
 	private final static int NEED_CLOSE_FLASH_BTS = 1;
@@ -134,6 +131,17 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	private Dialog mLoadingDialog;
 
 	private static class MyRunnable implements Runnable {
+		private final WeakReference<CustomCameraActivity> mActivityRef;
+
+		public MyRunnable(CustomCameraActivity activity) {
+			super();
+			mActivityRef = new WeakReference<CustomCameraActivity>(activity);
+		}
+
+		public WeakReference<CustomCameraActivity> getActivityRef() {
+			return mActivityRef;
+		}
+
 		@Override
 		public void run() {
 		}
@@ -204,7 +212,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 
 		mExecutorService = Executors.newFixedThreadPool(1);
 		uiHandler = new MyHandler(this);
-		
+
 		mCameraInfo = new CameraDisplayInfo();
 
 		Window window = getWindow();
@@ -335,24 +343,34 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					isRunning = true;
 
 					mLoadingDialog = ProgressDialog.show(CustomCameraActivity.this, "", "正在处理拍照，请稍候", true);
-					mExecutorService.submit(new MyRunnable() {
+					mExecutorService.submit(new MyRunnable(CustomCameraActivity.this) {
 						@Override
 						public void run() {
+                            CustomCameraActivity mActivity = getActivityRef().get();
+                            if (mActivity == null || mActivity.isFinishing()) {
+                                MLog.getIns().i("CustomCameraActivity", "-------before saving photo, mActivity is null, maybe is finished.");
+                                return;
+                            }
 							MLog.getIns().i("CustomCameraActivity", "-------正常点击，开始处理拍照");
-							saveImage(mPictureBytesData);
+							mActivity.saveImage(mPictureBytesData);
 							mPictureBytesData = null;
-							uiHandler.post(new MyRunnable() {
+							uiHandler.post(new MyRunnable(CustomCameraActivity.this) {
 								@Override
 								public void run() {
+                                    CustomCameraActivity mActivity = getActivityRef().get();
+                                    if (mActivity == null || mActivity.isFinishing()) {
+                                        MLog.getIns().i("CustomCameraActivity", "-------after saving photo, mActivity is null, maybe is finished.");
+                                        return;
+                                    }
 									// 关闭进度提示框等待
 									// 更新你的UI
-									setResult(RESULT_OK);
-									onPause();
-									finish();
+									mActivity.setResult(RESULT_OK);
+                                    mActivity.onPause();
+                                    mActivity.finish();
 									isRunning = false;
-									if (mLoadingDialog != null) {
-										mLoadingDialog.dismiss();
-										mLoadingDialog = null;
+									if (mActivity.mLoadingDialog != null) {
+                                        mActivity.mLoadingDialog.dismiss();
+                                        mActivity.mLoadingDialog = null;
 									}
 								}
 							});
@@ -559,10 +577,6 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	@Override
 	protected void onPause() {
 		super.onPause();
-		if (mHandleTask != null) {
-			if (mHandleTask.cancel(true))
-				;
-		}
 		if (uiHandler != null) {
 			uiHandler.removeCallbacksAndMessages(null);
 		}
@@ -773,38 +787,36 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		@Override
 		public void onPictureTaken(byte[] data, Camera camera) {
 			Log.d(TAG, "into picture call back");
-			mHandleTask = new HandlePicAsyncTask();
-			mHandleTask.execute(data);
+			mExecutorService.submit(new MyRunnable(CustomCameraActivity.this) {
+
+				@Override
+				public void run() {
+					CustomCameraActivity mActivity = getActivityRef().get();
+					if (mActivity == null || mActivity.isFinishing()) {
+						return;
+					}
+					mPictureBytesData = data;
+					final Bitmap bm  = createThumbnail(data);
+					uiHandler.post(new MyRunnable(CustomCameraActivity.this) {
+
+						@Override
+						public void run() {
+							CustomCameraActivity mActivity = getActivityRef().get();
+							if (mActivity == null || mActivity.isFinishing()) {
+								return;
+							}
+							mActivity.setIvPreShowBitmap(bm);
+							mCamera.startPreview();
+							mCamera.cancelAutoFocus();
+							mPreviewing =true;
+							Log.d(TAG," after take pic mPreviewing changed to :"+mPreviewing);
+						}
+					});
+				}
+			});
 			Log.d(TAG, "execute asynctask");
 		}
 	};
-
-	private class HandlePicAsyncTask extends AsyncTask<byte[], integer, Bitmap> {
-
-		@Override
-		protected Bitmap doInBackground(byte[]... params) {
-			Log.d(TAG, "background  start run");
-			Bitmap bm = null;
-			final byte[] data = params[0];
-			mPictureBytesData = data;
-//			mPictureBytesData = processLargeImage(data);
-//			saveImage(mPictureBytesData);
-			bm = createThumbnail(data);
-			return bm;
-		}
-
-		@Override
-		protected void onPostExecute(Bitmap bm) {
-			super.onPostExecute(bm);
-			Log.d(TAG, "onPostExecute  start run");
-			setIvPreShowBitmap(bm);
-			mCamera.startPreview();
-			mCamera.cancelAutoFocus();
-			mPreviewing = true;
-			Log.d(TAG, " after take pic mPreviewing changed to :" + mPreviewing);
-			Log.d(TAG, "onPostExecute  end run");
-		}
-	}
 
 	private byte[] processLargeImage(byte[] data) {
 		// 如果使用了大尺寸的图片，即没有找到与手机屏幕比例相近的图片，那么需要对图片进行裁剪
@@ -1230,7 +1242,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 
 	/**
 	 * 设置焦点和测光区域
-	 * 
+	 *
 	 * @param event
 	 */
 	public void focusOnTouch(MotionEvent event) {
@@ -1278,7 +1290,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 
 	/**
 	 * 计算焦点及测光区域
-	 * 
+	 *
 	 * @param focusWidth
 	 * @param focusHeight
 	 * @param areaMultiple
@@ -1316,8 +1328,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 
 	/**
 	 * 模式 NONE：无 FOCUSING：正在聚焦. FOCUSED:聚焦成功 FOCUSFAIL：聚焦失败
-	 * 
-	 * 
+	 *
+	 *
 	 */
 	private enum MODE {
 		NONE, FOCUSING, FOCUSED, FOCUSFAIL
