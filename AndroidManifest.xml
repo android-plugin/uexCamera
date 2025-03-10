@@ -25,7 +25,7 @@
             android:name="org.zywx.wbpalmstar.plugin.uexcamera.CustomCameraActivity"
             android:configChanges="orientation|keyboardHidden"
             android:exported="false"
-            android:theme="@android:style/Theme.NoTitleBar.Fullscreen" >
+            android:theme="@style/browser_main_theme" >
             <intent-filter>
                 <action android:name="android.intent.action.CAMERA_PLUGIN" />
 

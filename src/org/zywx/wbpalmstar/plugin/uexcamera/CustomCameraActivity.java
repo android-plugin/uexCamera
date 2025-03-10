@@ -30,6 +30,7 @@ import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
 import android.provider.MediaStore;
+import android.support.annotation.NonNull;
 import android.support.annotation.RequiresApi;
 import android.text.format.DateUtils;
 import android.util.DisplayMetrics;
@@ -68,6 +69,7 @@ import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.lang.ref.WeakReference;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -120,8 +122,9 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	private HandlePicAsyncTask mHandleTask;
 	private View view_focus;
 	private MODE mode = MODE.NONE;// 默认模式
-	private final int NEED_CLOSE_FLASH_BTS = 1;
-	private final int AUTO_FOCUS_AGAIN = 2;
+	private final static int NEED_CLOSE_FLASH_BTS = 1;
+	private final static int AUTO_FOCUS_AGAIN = 2;
+	private final static int HIDE_AUTO_FOCUS_FRAME = 3;
 	private OrientationEventListener orientationEventListener = null;
 	private int current_orientation = 0;
 	private int picture_orientation = 0;
@@ -130,38 +133,67 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 
 	private Dialog mLoadingDialog;
 
-	@SuppressLint("HandlerLeak")
-	private Handler mHandler = new Handler() {
+	private static class MyRunnable implements Runnable {
 		@Override
-		public void handleMessage(Message msg) {
-			if (msg.what == NEED_CLOSE_FLASH_BTS) {
-				try {
-					if (isOpenFlash) {
-						isOpenFlash = false;
-						mBtnFlash2.setVisibility(View.INVISIBLE);
-						mBtnFlash3.setVisibility(View.INVISIBLE);
-						mBtnFlash4.setVisibility(View.INVISIBLE);
-						Log.d("visible", " after close flash view,bts visible is" + mBtnFlash2.getVisibility() + " ,"
-								+ mBtnFlash3.getVisibility() + " ,"
-								+ mBtnFlash4.getVisibility());
-					}
-				} catch (Exception e) {
-					MLog.getIns().e(TAG, e);
-				}
-			} else if (msg.what == AUTO_FOCUS_AGAIN) {
-				try {
-					// 执行自动对焦
-					mCamera.autoFocus(CustomCameraActivity.this);
-				} catch (Exception e) {
-					MLog.getIns().e(TAG, e);
-				}
-			}
-			super.handleMessage(msg);
+		public void run() {
 		}
-	};
+	}
+
+	private static class MyHandler extends Handler {
+		private final WeakReference<CustomCameraActivity> mActivityRef;
+
+		public MyHandler(CustomCameraActivity activity) {
+			super(Looper.getMainLooper());
+			mActivityRef = new WeakReference<CustomCameraActivity>(activity);
+		}
+
+		@Override
+		public void handleMessage(@NonNull Message msg) {
+			super.handleMessage(msg);
+			CustomCameraActivity activity = mActivityRef.get();
+			if (activity == null || activity.isFinishing()) {
+				MLog.getIns().e(TAG, "activity is null, maybe is finished.");
+				return;
+			}
+			activity.handleHandlerMessage(msg);
+		}
+	}
+
+	private MyHandler uiHandler;
+
 	private String supportedFocusMode;
 	private AlertDialog mInfoDialog;
 	private CameraDisplayInfo mCameraInfo;
+
+	/**
+	 * 处理Handler消息，分离在static Handler外部
+	 */
+	private void handleHandlerMessage(@NonNull Message msg) {
+		if (msg.what == NEED_CLOSE_FLASH_BTS) {
+			try {
+				if (isOpenFlash) {
+					isOpenFlash = false;
+					mBtnFlash2.setVisibility(View.INVISIBLE);
+					mBtnFlash3.setVisibility(View.INVISIBLE);
+					mBtnFlash4.setVisibility(View.INVISIBLE);
+					Log.d("visible", " after close flash view,bts visible is" + mBtnFlash2.getVisibility() + " ,"
+							+ mBtnFlash3.getVisibility() + " ,"
+							+ mBtnFlash4.getVisibility());
+				}
+			} catch (Exception e) {
+				MLog.getIns().e(TAG, e);
+			}
+		} else if (msg.what == AUTO_FOCUS_AGAIN) {
+			try {
+				// 执行自动对焦
+				mCamera.autoFocus(CustomCameraActivity.this);
+			} catch (Exception e) {
+				MLog.getIns().e(TAG, e);
+			}
+		} else if (msg.what == HIDE_AUTO_FOCUS_FRAME) {
+			view_focus.setVisibility(View.INVISIBLE);
+		}
+	}
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) {
@@ -171,6 +203,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		requestWindowFeature(Window.FEATURE_NO_TITLE);
 
 		mExecutorService = Executors.newFixedThreadPool(1);
+		uiHandler = new MyHandler(this);
 		
 		mCameraInfo = new CameraDisplayInfo();
 
@@ -248,7 +281,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					mBtnFlash4.bringToFront();
 					Log.d("visible", "when close, after click flash1 view,bts visible is" + mBtnFlash2.getVisibility()
 							+ " ," + mBtnFlash3.getVisibility() + " ," + mBtnFlash4.getVisibility());
-					mHandler.sendEmptyMessageDelayed(NEED_CLOSE_FLASH_BTS, 4000);
+					uiHandler.sendEmptyMessageDelayed(NEED_CLOSE_FLASH_BTS, 4000);
 				}
 			}
 		});
@@ -302,14 +335,13 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					isRunning = true;
 
 					mLoadingDialog = ProgressDialog.show(CustomCameraActivity.this, "", "正在处理拍照，请稍候", true);
-					mExecutorService.submit(new Runnable() {
+					mExecutorService.submit(new MyRunnable() {
 						@Override
 						public void run() {
 							MLog.getIns().i("CustomCameraActivity", "-------正常点击，开始处理拍照");
 							saveImage(mPictureBytesData);
 							mPictureBytesData = null;
-							Handler uiThread = new Handler(Looper.getMainLooper());
-							uiThread.post(new Runnable() {
+							uiHandler.post(new MyRunnable() {
 								@Override
 								public void run() {
 									// 关闭进度提示框等待
@@ -335,16 +367,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		mBtnTakePic.setOnClickListener(new OnClickListener() {
 			@Override
 			public void onClick(View v) {
-				if (!Parameters.FOCUS_MODE_CONTINUOUS_PICTURE.equals(supportedFocusMode) && (mode == MODE.FOCUSFAIL || mode == MODE.FOCUSING || mCamera == null)) {
-					Toast.makeText(CustomCameraActivity.this, "相机正在准备中，请稍候", Toast.LENGTH_SHORT).show();
-					return;
-				}
-				if (mPreviewing) {
-					mPreviewing = false;
-					mCamera.takePicture(null, null, pictureCallback);
-				} else {
-					Toast.makeText(CustomCameraActivity.this, "摄像机正忙", Toast.LENGTH_SHORT).show();
-				}
+				takePictureAction();
 			}
 		});
 		mBtnChangeFacing.setOnClickListener(new OnClickListener() {
@@ -378,7 +401,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				}
 			}
 		});
-		mHandler.sendEmptyMessageDelayed(NEED_CLOSE_FLASH_BTS, 1000);
+		uiHandler.sendEmptyMessageDelayed(NEED_CLOSE_FLASH_BTS, 1000);
 		view_focus = (View) findViewById(CRes.plugin_camera_view_focus);
 		mSurfaceView.setOnTouchListener(onTouchListener);
 		Log.d("visible", " after oncreate flash view,bts visible is" + mBtnFlash2.getVisibility() + " ,"
@@ -386,6 +409,16 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				+ mBtnFlash4.getVisibility());
 	}
 
+	@Override
+	protected void onDestroy() {
+		super.onDestroy();
+		if (uiHandler != null) {
+			uiHandler.removeCallbacksAndMessages(null);
+		}
+		if (mExecutorService != null) {
+			mExecutorService.shutdownNow();
+		}
+	}
 
 	protected void onOrientationChanged(int orientation) {
 		if (orientation == OrientationEventListener.ORIENTATION_UNKNOWN) {
@@ -413,6 +446,19 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			Camera.Parameters parameters = mCamera.getParameters();
 			parameters.setRotation(rotation);
 			mCamera.setParameters(parameters);
+		}
+	}
+
+	private void takePictureAction() {
+		if (!Parameters.FOCUS_MODE_CONTINUOUS_PICTURE.equals(supportedFocusMode) && (mode == MODE.FOCUSFAIL || mode == MODE.FOCUSING || mCamera == null)) {
+			Toast.makeText(CustomCameraActivity.this, "相机正在准备中，请稍候", Toast.LENGTH_SHORT).show();
+			return;
+		}
+		if (mPreviewing) {
+			mPreviewing = false;
+			mCamera.takePicture(null, null, pictureCallback);
+		} else {
+			Toast.makeText(CustomCameraActivity.this, "摄像机正忙", Toast.LENGTH_SHORT).show();
 		}
 	}
 
@@ -475,7 +521,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 
 	private void updateFlashButtonState(int index) {
 		isOpenFlash = false;
-		mHandler.removeMessages(NEED_CLOSE_FLASH_BTS);
+		uiHandler.removeMessages(NEED_CLOSE_FLASH_BTS);
 		mBtnFlash2.setVisibility(View.INVISIBLE);
 		mBtnFlash3.setVisibility(View.INVISIBLE);
 		mBtnFlash4.setVisibility(View.INVISIBLE);
@@ -517,17 +563,16 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			if (mHandleTask.cancel(true))
 				;
 		}
+		if (uiHandler != null) {
+			uiHandler.removeCallbacksAndMessages(null);
+		}
 		if (mCamera != null) {
-			if (mHandler != null) {
-				mHandler.removeCallbacksAndMessages(null);
-			}
 			mCamera.setPreviewCallback(null);
 			mCamera.stopPreview();
 			mCamera.release();
 			mCamera = null;
 			mPreviewing = false;
 			Log.d("mPreviewing", "mPreviewing changed to :" + mPreviewing);
-
 		}
 		orientationEventListener.disable();
 	}
@@ -559,7 +604,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			mCamera.startPreview();
 			mPreviewing = true;
 			MLog.getIns().i("mPreviewing after inti camera mPreviewing changed to :" + mPreviewing);
-//			mHandler.sendEmptyMessage(AUTO_FOCUS_AGAIN);
+//			uiHandler.sendEmptyMessage(AUTO_FOCUS_AGAIN);
 			mCamera.cancelAutoFocus();
 		} catch (Exception e) {
 			MLog.getIns().e(TAG + "initCamera", e);
@@ -681,18 +726,9 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			mOnKeyDown = true;
 			return true;
 		}
-		if (keyCode == event.KEYCODE_VOLUME_DOWN ||
-			keyCode == event.KEYCODE_VOLUME_UP ) {
-            if (!Parameters.FOCUS_MODE_CONTINUOUS_PICTURE.equals(supportedFocusMode) && (mode == MODE.FOCUSFAIL || mode == MODE.FOCUSING || mCamera == null)) {
-                   Toast.makeText(CustomCameraActivity.this, "相机正在准备中，请稍候", Toast.LENGTH_SHORT).show();
-                   return true;
-            }
-            if (mPreviewing) {
-                   mPreviewing = false;
-                   mCamera.takePicture(null, null, pictureCallback);
-            } else {
-                   Toast.makeText(CustomCameraActivity.this, "摄像机正忙", Toast.LENGTH_SHORT).show();
-            }
+		if (keyCode == KeyEvent.KEYCODE_VOLUME_DOWN ||
+			keyCode == KeyEvent.KEYCODE_VOLUME_UP ) {
+            takePictureAction();
 			return true;
         }
 		return super.onKeyDown(keyCode, event);
@@ -1136,19 +1172,14 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			view_focus.setBackgroundResource(CRes.plugin_camera_view_focus_fail_bg);
 //			if (!Parameters.FOCUS_MODE_CONTINUOUS_PICTURE.equals(supportedFocusMode)) {
 //				// 延时2秒再执行一次自动对焦
-//				mHandler.sendEmptyMessageDelayed(AUTO_FOCUS_AGAIN, 2 * 1000);
+//				uiHandler.sendEmptyMessageDelayed(AUTO_FOCUS_AGAIN, 2 * 1000);
 //			}
 		}
-		setFocusView();
+		resetFocusView();
 	}
 
-	private void setFocusView() {
-		new Handler().postDelayed(new Runnable() {
-			@Override
-			public void run() {
-				view_focus.setVisibility(View.INVISIBLE);
-			}
-		}, 1 * 1000);
+	private void resetFocusView() {
+		uiHandler.sendEmptyMessageDelayed(HIDE_AUTO_FOCUS_FRAME,  1000);
 	}
 
 	private float mOldDistance = 0;
@@ -1166,10 +1197,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					int width = view_focus.getWidth();
 					int height = view_focus.getHeight();
 					view_focus.setBackgroundResource(CRes.plugin_camera_view_focusing_bg);
-					if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.HONEYCOMB) {
-						view_focus.setX(event.getX() - (width / 2));
-						view_focus.setY(event.getY() - (height / 2));
-					}
+					view_focus.setX(event.getX() - ((float) width / 2));
+					view_focus.setY(event.getY() - ((float) height / 2));
 					view_focus.setVisibility(View.VISIBLE);
 				} else if (event.getAction() == MotionEvent.ACTION_UP) {
 					mode = MODE.FOCUSING;
@@ -1222,12 +1251,14 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				if (parameters.getMaxNumFocusAreas() > 0) {
 					List<Camera.Area> focusAreas = new ArrayList<Camera.Area>();
 					focusAreas.add(new Camera.Area(focusRect, 1000));
+					// 对焦区域
 					parameters.setFocusAreas(focusAreas);
 				}
 
 				if (parameters.getMaxNumMeteringAreas() > 0) {
 					List<Camera.Area> meteringAreas = new ArrayList<Camera.Area>();
 					meteringAreas.add(new Camera.Area(meteringRect, 1000));
+					// 测光区域
 					parameters.setMeteringAreas(meteringAreas);
 				}
 			}
@@ -1239,7 +1270,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 				MLog.getIns().i(TAG, "focus mode is auto!!!");
 			}
 			mCamera.setParameters(parameters);
-			mHandler.sendEmptyMessage(AUTO_FOCUS_AGAIN);
+			uiHandler.sendEmptyMessage(AUTO_FOCUS_AGAIN);
 		} catch (Exception e) {
 			MLog.getIns().e(TAG + "focusOnTouch", e);
 		}

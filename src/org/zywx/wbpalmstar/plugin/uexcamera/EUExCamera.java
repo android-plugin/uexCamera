@@ -1304,11 +1304,17 @@ public class EUExCamera extends EUExBase implements CallbackCameraViewClose {
                 }
             }
 
+            if (tmpPicture != null) {
+                tmpPicture.recycle();
+                tmpPicture = null;
+            }
+
             float val = (float)count / (float)(height*width);
             if (val > 0.5f) {
                 return true;
             }
         } catch (FileNotFoundException e) {
+            MLog.getIns().i("【checkPic】 FileNotFoundException return");
             throw new RuntimeException(e);
         }
         return false;
