@@ -1,8 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <uexplugins>
     <plugin
-        uexName="uexCamera" version="4.6.29.1" build="2023122701">
-        <info>29.1:适配4.6、4.7引擎，target30，包括系统相机和自定义相机</info>
+        uexName="uexCamera" version="4.6.30.1" build="2025040301">
+        <info>30.1:优化自定义相机的内存使用，优化自定义相机对焦逻辑</info>
+        <build>29.1:适配4.6、4.7引擎，target30，包括系统相机和自定义相机</build>
         <build>28:增加检查黑色图片逻辑，如果是全黑色图片，不返回图片路径</build>
         <build>27:增加使用增加音量键拍照功能</build>
         <build>26:增加使用减小音量键拍照功能</build>
