@@ -145,7 +145,15 @@ public class CameraUtil {
         return sb.toString();
     }
 
-    public static void handleZoom(Camera camera, boolean isZoomIn) {
+    /**
+     * 处理缩放，返回当前缩放值
+     *
+     * @param camera
+     * @param isZoomIn
+     * @return
+     */
+    public static int handleZoom(Camera camera, boolean isZoomIn) {
+        MLog.getIns().i(TAG, "handleZoom isZoomIn:" + isZoomIn);
         Camera.Parameters parameters = camera.getParameters();
         if (parameters.isZoomSupported()) { // 首先还是要判断是否支持
             int maxZoom = parameters.getMaxZoom();
@@ -157,8 +165,11 @@ public class CameraUtil {
             }
             parameters.setZoom(zoom); // 通过这个方法设置放大缩小
             camera.setParameters(parameters);
+            MLog.getIns().i(TAG, "handleZoom currentZoom:" + zoom);
+            return zoom;
         } else {
             MLog.getIns().w(TAG + " zoom is not supported!!!");
+            return -1;
         }
     }
     public static float getFingerSpacing(MotionEvent event) {

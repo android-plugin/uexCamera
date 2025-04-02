@@ -52,6 +52,7 @@ import android.widget.Toast;
 
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.BitmapUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.CameraUtil;
+import org.zywx.wbpalmstar.plugin.uexcamera.utils.CoordinateTransformer;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.ExifUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.FileUtil;
 import org.zywx.wbpalmstar.plugin.uexcamera.utils.ImageWatermarkUtil;
@@ -125,6 +126,9 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	private OrientationEventListener orientationEventListener = null;
 	private int current_orientation = 0;
 	private int picture_orientation = 0;
+	private int mCurrentZoom = -1;
+	// 竖屏时相机旋转角度
+	private final static int DEFAULT_ROTATE_DEGREE = 90;
 
 	private boolean isUseLargerImageSize;
 
@@ -618,7 +622,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			mCamera.startPreview();
 			mPreviewing = true;
 			MLog.getIns().i("mPreviewing after inti camera mPreviewing changed to :" + mPreviewing);
-//			uiHandler.sendEmptyMessage(AUTO_FOCUS_AGAIN);
+			uiHandler.sendEmptyMessage(AUTO_FOCUS_AGAIN);
 			mCamera.cancelAutoFocus();
 		} catch (Exception e) {
 			MLog.getIns().e(TAG + "initCamera", e);
@@ -628,16 +632,11 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	private void initCameraParameters() {
 		Camera.Parameters parameters = mCamera.getParameters();
 		String mod = Build.MODEL;
-		if (Build.VERSION.SDK_INT >= 8) {
-			// MZ 180， other 90...
-			if ("M9".equalsIgnoreCase(mod) || "MX".equalsIgnoreCase(mod)) {
-				setDisplayOrientation(mCamera, 180);
-			} else {
-				setDisplayOrientation(mCamera, 90);
-			}
+		// MZ 180， other 90...
+		if ("M9".equalsIgnoreCase(mod) || "MX".equalsIgnoreCase(mod)) {
+			setDisplayOrientation(mCamera, 180);
 		} else {
-			parameters.set("orientation", "portrait");
-			parameters.set("rotation", 90);
+			setDisplayOrientation(mCamera, DEFAULT_ROTATE_DEGREE);
 		}
 
 		if (cameraCurrentlyLocked == CameraInfo.CAMERA_FACING_FRONT) {
@@ -687,7 +686,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		mCameraInfo.pictureSize.width = pictureSize.width;
 		parameters.setPictureSize(pictureSize.width, pictureSize.height);
 		// 根据预览分辨率，调整surfaceView的高度，防止比例失调
-		int newSurfaceViewHeight = (int) (previewSize.width * mSurfaceView.getWidth() / previewSize.height);
+		int newSurfaceViewHeight = (int) ((double)previewSize.width * (double)mSurfaceView.getWidth() / (double)previewSize.height);
 		mSurfaceView.setLayoutParams(new FrameLayout.LayoutParams(FrameLayout.LayoutParams.MATCH_PARENT, newSurfaceViewHeight));
 
 		//设置闪光灯默认为自动
@@ -1182,16 +1181,17 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 		} else {
 			mode = MODE.FOCUSFAIL;
 			view_focus.setBackgroundResource(CRes.plugin_camera_view_focus_fail_bg);
-//			if (!Parameters.FOCUS_MODE_CONTINUOUS_PICTURE.equals(supportedFocusMode)) {
-//				// 延时2秒再执行一次自动对焦
-//				uiHandler.sendEmptyMessageDelayed(AUTO_FOCUS_AGAIN, 2 * 1000);
-//			}
+			if (!Parameters.FOCUS_MODE_CONTINUOUS_PICTURE.equals(supportedFocusMode)) {
+				// 延时2秒再执行一次自动对焦
+				uiHandler.sendEmptyMessageDelayed(AUTO_FOCUS_AGAIN, 2 * 1000);
+			}
 		}
 		resetFocusView();
 	}
 
 	private void resetFocusView() {
-		uiHandler.sendEmptyMessageDelayed(HIDE_AUTO_FOCUS_FRAME,  1000);
+		uiHandler.removeMessages(HIDE_AUTO_FOCUS_FRAME);
+		uiHandler.sendEmptyMessageDelayed(HIDE_AUTO_FOCUS_FRAME,  2000);
 	}
 
 	private float mOldDistance = 0;
@@ -1225,9 +1225,9 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					case MotionEvent.ACTION_MOVE:
 						float newDistance = CameraUtil.getFingerSpacing(event);
 						if (newDistance > mOldDistance) {
-							CameraUtil.handleZoom(mCamera, true);
+							mCurrentZoom = CameraUtil.handleZoom(mCamera, true);
 						} else if (newDistance < mOldDistance) {
-							CameraUtil.handleZoom(mCamera, false);
+							mCurrentZoom = CameraUtil.handleZoom(mCamera, false);
 						}
 						mOldDistance = newDistance;
 						break;
@@ -1252,8 +1252,9 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 			}
 			Camera.Parameters parameters = mCamera.getParameters();
 			if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.ICE_CREAM_SANDWICH) {
+				// 这里修改为直接用0，不偏移，因为坐标应该是相对于surfaceView内部的。之前应该是因为surfaceView与相机预览区域不一致所以偏移了一部分，但是现在已经修改了逻辑，保持一致了。
 				int[] location = new int[2];
-				mSurfaceView.getLocationOnScreen(location);
+//				mSurfaceView.getLocationOnScreen(location);
 				Rect focusRect = calculateTapArea(view_focus.getWidth(), view_focus.getHeight(), 1f, event.getRawX(),
 						event.getRawY(), location[0], location[0] + mSurfaceView.getWidth(), location[1],
 						location[1] + mSurfaceView.getHeight());
@@ -1274,7 +1275,8 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 					parameters.setMeteringAreas(meteringAreas);
 				}
 			}
-			// 触摸手动对焦后，切换为自动对焦模式
+			// 触摸手动对焦后，切换为自动对焦模式，而非持续对焦模式，防止手动对焦后的结果被持续对焦覆盖
+			// 也就是说，只要手动对焦一次，就切换为自动对焦模式。不点击屏幕进行手动对焦，就是持续对焦模式
 			List<String> focusModes = parameters.getSupportedFocusModes();
 			if (focusModes.contains(Camera.Parameters.FOCUS_MODE_AUTO)) {
 				// Autofocus mode is supported
@@ -1289,7 +1291,7 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	}
 
 	/**
-	 * 计算焦点及测光区域
+	 * 计算触摸对焦和测光区域，并根据旋转角度进行坐标转换
 	 *
 	 * @param focusWidth
 	 * @param focusHeight
@@ -1303,27 +1305,12 @@ public class CustomCameraActivity extends Activity implements Callback, AutoFocu
 	 * @return Rect(left,top,right,bottom) : left、top、right、bottom是以显示区域中心为原点的坐标
 	 */
 	public Rect calculateTapArea(int focusWidth, int focusHeight, float areaMultiple, float x, float y, int previewleft,
-			int previewRight, int previewTop, int previewBottom) {
-		int areaWidth = (int) (focusWidth * areaMultiple);
-		int areaHeight = (int) (focusHeight * areaMultiple);
-		int centerX = (previewleft + previewRight) / 2;
-		int centerY = (previewTop + previewBottom) / 2;
-		double unitx = ((double) previewRight - (double) previewleft) / 2000;
-		double unity = ((double) previewBottom - (double) previewTop) / 2000;
-		int left = clamp((int) (((x - areaWidth / 2) - centerX) / unitx), -1000, 1000);
-		int top = clamp((int) (((y - areaHeight / 2) - centerY) / unity), -1000, 1000);
-		int right = clamp((int) (left + areaWidth / unitx), -1000, 1000);
-		int bottom = clamp((int) (top + areaHeight / unity), -1000, 1000);
-
-		return new Rect(left, top, right, bottom);
-	}
-
-	public int clamp(int x, int min, int max) {
-		if (x > max)
-			return max;
-		if (x < min)
-			return min;
-		return x;
+									   int previewRight, int previewTop, int previewBottom) {
+		CoordinateTransformer transformer = new CoordinateTransformer(false, DEFAULT_ROTATE_DEGREE, mSurfaceView.getWidth(), mSurfaceView.getHeight());
+		// 默认对焦区域为正方形，如果不是，则取最小值作为正方形的边长
+		Rect rect = transformer.getFocusRect(x, y, Math.min(focusWidth, focusHeight), areaMultiple);
+		MLog.getIns().i("CalculateTapArea", "Raw Rect: " + rect.left + "," + rect.top + "," + rect.right + "," + rect.bottom);
+		return rect;
 	}
 
 	/**
